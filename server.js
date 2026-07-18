@@ -98,6 +98,23 @@ function getBALsFromInventory(codigoSearch) {
     .map(normalizeMachine);
 }
 
+function getSOULsFromInventory(codigoSearch) {
+  const search = codigoSearch.trim().toLowerCase();
+  return inventory
+    .filter((m) => {
+      const h = (m.hostname || '').toUpperCase();
+      const isApp = h.includes('SOUL') || h.includes('ERP') || h.includes('HOSP') || h.includes('-REPORT') || h.includes('PEP') || h.includes('INTEGRACAO');
+      if (!isApp) return false;
+      const codigo = (m.codigo || '').toLowerCase().replace(/^0+/, '');
+      const codigoRaw = (m.codigo || '').toLowerCase();
+      return (
+        codigo === search.replace(/^0+/, '') ||
+        codigoRaw === search
+      );
+    })
+    .map(normalizeMachine);
+}
+
 function getAllClientsFromInventory() {
   const clients = new Map();
   for (const m of inventory) {
@@ -488,51 +505,56 @@ app.get('/api/soul-machines', async (req, res) => {
   if (!codigo) return res.status(400).json({ success: false, error: 'Missing codigo' });
 
   try {
-    const pool = await getDB();
-    if (!pool) return res.status(503).json({ success: false, error: 'DB not available' });
+    let soulMachines = getSOULsFromInventory(codigo);
+    let bals = getBALsFromInventory(codigo).filter(m => m.public_ip && m.public_ip !== '---');
 
-    const padded = codigo.replace(/^0+/, '').padStart(4, '0');
+    // Se não achou na memória, tenta no BD (se disponível)
+    if (soulMachines.length === 0 || bals.length === 0) {
+      const pool = await getDB();
+      if (pool) {
+        const padded = codigo.replace(/^0+/, '').padStart(4, '0');
+        
+        if (soulMachines.length === 0) {
+          const [soulRows] = await pool.query(
+            `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
+             FROM instances
+             WHERE (client_code = ? OR client_code = ?)
+               AND (
+                 UPPER(hostname) LIKE '%SOUL%' OR
+                 UPPER(hostname) LIKE '%ERP%'  OR
+                 UPPER(hostname) LIKE '%HOSP%' OR
+                 UPPER(hostname) LIKE '%-REPORT%' OR
+                 UPPER(hostname) LIKE '%PEP%'  OR
+                 UPPER(hostname) LIKE '%INTEGRACAO%'
+               )
+             ORDER BY hostname`,
+            [codigo, padded]
+          );
+          soulMachines = soulRows.map(m => ({
+            ...m,
+            ambiente: getEnvLabel(m.hostname),
+            sshPassword: SSH_PASSWORDS[m.tenancy] || '',
+          }));
+        }
 
-    // Get APP machines (SOUL, ERP, HOSP, REPORT, PEP, INTEGRACAO)
-    const [soulRows] = await pool.query(
-      `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
-       FROM instances
-       WHERE (client_code = ? OR client_code = ?)
-         AND (
-           UPPER(hostname) LIKE '%SOUL%' OR
-           UPPER(hostname) LIKE '%ERP%'  OR
-           UPPER(hostname) LIKE '%HOSP%' OR
-           UPPER(hostname) LIKE '%-REPORT%' OR
-           UPPER(hostname) LIKE '%PEP%'  OR
-           UPPER(hostname) LIKE '%INTEGRACAO%'
-         )
-       ORDER BY hostname`,
-      [codigo, padded]
-    );
-
-    // Get BAL machines (for jump host)
-    const [balRows] = await pool.query(
-      `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
-       FROM instances
-       WHERE (client_code = ? OR client_code = ?)
-         AND UPPER(hostname) LIKE '%BAL%'
-         AND public_ip IS NOT NULL AND public_ip != '---'
-       ORDER BY hostname`,
-      [codigo, padded]
-    );
-
-    // Enrich SOUL machines with ambiente label
-    const soulMachines = soulRows.map(m => ({
-      ...m,
-      ambiente: getEnvLabel(m.hostname),
-      sshPassword: SSH_PASSWORDS[m.tenancy] || '',
-    }));
-
-    const bals = balRows.map(m => ({
-      ...m,
-      ambiente: getEnvLabel(m.hostname),
-      sshPassword: SSH_PASSWORDS[m.tenancy] || '',
-    }));
+        if (bals.length === 0) {
+          const [balRows] = await pool.query(
+            `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
+             FROM instances
+             WHERE (client_code = ? OR client_code = ?)
+               AND UPPER(hostname) LIKE '%BAL%'
+               AND public_ip IS NOT NULL AND public_ip != '---'
+             ORDER BY hostname`,
+            [codigo, padded]
+          );
+          bals = balRows.map(m => ({
+            ...m,
+            ambiente: getEnvLabel(m.hostname),
+            sshPassword: SSH_PASSWORDS[m.tenancy] || '',
+          }));
+        }
+      }
+    }
 
     res.json({ success: true, soulMachines, bals });
   } catch (e) {
