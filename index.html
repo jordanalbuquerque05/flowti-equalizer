@@ -1994,9 +1994,9 @@ async function runFullCheck() {
     }
 
     if (missingOrError) {
-       tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px;">
-         Houve erro ao conectar em algumas máquinas. Os resultados podem estar incompletos. <br>
-         Verifique se as máquinas estão ligadas: <a href="https://start-tst.flowti.com.br/" target="_blank" style="color:var(--accent); text-decoration:underline;">https://start-tst.flowti.com.br/</a>
+       tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+         <span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
+         <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:6px 12px; background:var(--accent); color:#fff; text-decoration:none; border-radius:4px; font-size:12px; font-weight:600;">StartTstOps</a>
        </div>`;
     } else if (mismatchedProducts.length > 0) {
        tableWrap.innerHTML = `
@@ -2115,8 +2115,11 @@ async function runVersionCheck() {
       const errorMsg = document.createElement('div');
       errorMsg.className = "ver-mismatch-msg";
       errorMsg.style.marginBottom = "16px";
-      errorMsg.innerHTML = `Houve erro ao conectar em algumas máquinas. Os resultados podem estar incompletos. <br>
-      Verifique se as máquinas estão ligadas: <a href="https://start-tst.flowti.com.br/" target="_blank" style="color:var(--accent); text-decoration:underline;">https://start-tst.flowti.com.br/</a>`;
+      errorMsg.style.display = "flex";
+      errorMsg.style.justifyContent = "space-between";
+      errorMsg.style.alignItems = "center";
+      errorMsg.innerHTML = `<span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
+      <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:6px 12px; background:var(--accent); color:#fff; text-decoration:none; border-radius:4px; font-size:12px; font-weight:600;">StartTstOps</a>`;
       tableWrap.appendChild(errorMsg);
       
       // Render table in a wrapper so we don't overwrite the errorMsg
@@ -2329,8 +2332,11 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
       const errorMsg = document.createElement('div');
       errorMsg.className = "ver-mismatch-msg";
       errorMsg.style.marginBottom = "16px";
-      errorMsg.innerHTML = `Houve erro ao conectar em algumas máquinas. Os resultados podem estar incompletos. <br>
-      Verifique se as máquinas estão ligadas: <a href="https://start-tst.flowti.com.br/" target="_blank" style="color:var(--accent); text-decoration:underline;">https://start-tst.flowti.com.br/</a>`;
+      errorMsg.style.display = "flex";
+      errorMsg.style.justifyContent = "space-between";
+      errorMsg.style.alignItems = "center";
+      errorMsg.innerHTML = `<span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
+      <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:6px 12px; background:var(--accent); color:#fff; text-decoration:none; border-radius:4px; font-size:12px; font-weight:600;">StartTstOps</a>`;
       relWrap.appendChild(errorMsg);
       
       const tableInner = document.createElement('div');
