@@ -182,6 +182,27 @@ async function getBALsFromDB(codigo) {
   }
 }
 
+// ─── Cache Mechanism for Tomcats ────────────────────────────────────────────────
+const TOMCAT_CACHE_FILE = path.join(__dirname, 'tomcat_cache.json');
+let tomcatCache = {};
+if (fs.existsSync(TOMCAT_CACHE_FILE)) {
+  try {
+    tomcatCache = JSON.parse(fs.readFileSync(TOMCAT_CACHE_FILE, 'utf8'));
+  } catch (e) {
+    console.error('Failed to load tomcat_cache.json', e.message);
+  }
+}
+
+function saveTomcatCache() {
+  fs.writeFile(TOMCAT_CACHE_FILE, JSON.stringify(tomcatCache, null, 2), err => {
+    if (err) console.error('Failed to save tomcat_cache.json', err.message);
+  });
+}
+
+function getTargetDir(ambiente) {
+  return ambiente === 'PRD' ? 'soulmv_prd' : 'soulmv_trn';
+}
+
 // ─── REST API ─────────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(__dirname));
@@ -222,18 +243,34 @@ app.post('/api/restart-tomcat', async (req, res) => {
     
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
     
-    // Comando para procurar o xml do produto e achar o nome do tomcat
-    const cmd = `sudo su << 'EOF'
-xml=$(ls /MV/servers/*/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
-if [ -z "$xml" ]; then
-  echo "❌ Produto ${produto} não encontrado na máquina ${machine.hostname}"
-else
-  tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
-  tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
-  echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_port)"
+    const targetDir = getTargetDir(machine.ambiente);
+    let cachedTomcat = tomcatCache[machine.ip] ? tomcatCache[machine.ip][produto] : null;
 
-  echo ">> [1/3] Executando: tomcatctl stop $tomcat_port"
-  tomcatctl stop "$tomcat_port"
+    let findTomcatLogic;
+    if (cachedTomcat) {
+      findTomcatLogic = `
+tomcat_name="${cachedTomcat}"
+tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
+echo ">> [CACHE] Produto ${produto} mapeado no Tomcat: $tomcat_name (porta: $tomcat_port)"
+`;
+    } else {
+      findTomcatLogic = `
+xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+if [ -z "$xml" ]; then
+  echo "❌ Produto ${produto} não encontrado no ambiente ${targetDir} da máquina ${machine.hostname}"
+  exit 1
+fi
+tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
+tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
+echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_port)"
+`;
+    }
+
+    // Comando para reiniciar o tomcat
+    const cmd = `sudo su << 'EOF'
+${findTomcatLogic}
+echo ">> [1/3] Executando: tomcatctl stop $tomcat_port"
+tomcatctl stop "$tomcat_port"
   if [ $? -ne 0 ]; then
     echo "❌ STOP falhou para o Tomcat $tomcat_port — abortando sequência."
     exit 1
@@ -256,7 +293,6 @@ else
   fi
   echo "✅ START concluído."
   echo "=== Tomcat $tomcat_port reiniciado com sucesso na máquina ${machine.hostname} ==="
-fi
 EOF
     `;
 
@@ -341,25 +377,41 @@ app.post('/api/rollback-tomcat', async (req, res) => {
     
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
 
-    const cmd = `sudo su << 'EOF'
-xml=$(ls /MV/servers/*/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+    const targetDir = getTargetDir(machine.ambiente);
+    let cachedTomcat = tomcatCache[machine.ip] ? tomcatCache[machine.ip][produto] : null;
+
+    let findTomcatLogic;
+    if (cachedTomcat) {
+      findTomcatLogic = `
+tomcat_name="${cachedTomcat}"
+xml="/MV/servers/${targetDir}/$tomcat_name/conf/Catalina/localhost/${produto}.xml"
+echo ">> [CACHE] Produto ${produto} mapeado no Tomcat: $tomcat_name"
+`;
+    } else {
+      findTomcatLogic = `
+xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
 if [ -z "$xml" ]; then
-  echo "\u274c Produto ${produto} não encontrado na máquina ${machine.hostname}"
-else
-  tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
-  backup_file="${backupPath}/$tomcat_name/$(basename "$xml")"
-  
-  if [ -f "$backup_file" ]; then
-    echo ">> Restaurando backup de $backup_file para $xml"
-    cp "$backup_file" "$xml"
-    if [ $? -eq 0 ]; then
-      echo "=== Rollback do produto ${produto} concluído com sucesso! ==="
-    else
-      echo "\u274c Erro ao copiar o arquivo de backup."
-    fi
+  echo "❌ Produto ${produto} não encontrado no ambiente ${targetDir} da máquina ${machine.hostname}"
+  exit 1
+fi
+tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
+`;
+    }
+
+    const cmd = `sudo su << 'EOF'
+${findTomcatLogic}
+backup_file="${backupPath}/$tomcat_name/$(basename "$xml")"
+
+if [ -f "$backup_file" ]; then
+  echo ">> Restaurando backup de $backup_file para $xml"
+  cp "$backup_file" "$xml"
+  if [ $? -eq 0 ]; then
+    echo "=== Rollback do produto ${produto} concluído com sucesso! ==="
   else
-    echo "\u274c Arquivo de backup não encontrado: $backup_file"
+    echo "❌ Erro ao copiar o arquivo de backup."
   fi
+else
+  echo "❌ Arquivo de backup não encontrado: $backup_file"
 fi
 EOF
     `;
@@ -571,26 +623,7 @@ app.post('/api/check-versions', async (req, res) => {
 
   const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
 
-  // Command executed on each APP machine — scans ALL /MV/servers/*/ subdirs
-  const CMD = `
-for serverdir in /MV/servers/*/; do
-  [ -d "$serverdir" ] || continue
-  for dir in "$serverdir"/*/; do
-    [ -d "$dir" ] || continue
-    tomcat=$(basename "$dir")
-    lhpath="$dir/conf/Catalina/localhost"
-    [ -d "$lhpath" ] || continue
-    for xml in "$lhpath"/*.xml; do
-      [ -f "$xml" ] || continue
-      produto=$(basename "$xml" .xml)
-      versao=$(grep -oP 'docBase="[^"]*products/[^/]+/\\K[^/]+' "$xml" 2>/dev/null | head -1)
-      [ -z "$versao" ] && versao=$(grep -oP '\\d{4}\\.\\d+\\.\\d+-[A-Z]+' "$xml" 2>/dev/null | head -1)
-      [ -z "$versao" ] && versao="unknown"
-      echo "$tomcat|$produto|$versao"
-    done
-  done
-done
-`.trim();
+  // Command is generated per machine in the loop based on its environment
 
   function sshExec(host, password, cmd, timeout = 20000) {
     return new Promise((resolve, reject) => {
@@ -685,14 +718,46 @@ done
 
   for (const machine of machines) {
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+    const targetDir = getTargetDir(machine.ambiente);
+    const dynamicCMD = `
+for serverdir in /MV/servers/${targetDir}/; do
+  [ -d "$serverdir" ] || continue
+  for dir in "$serverdir"/*/; do
+    [ -d "$dir" ] || continue
+    tomcat=$(basename "$dir")
+    lhpath="$dir/conf/Catalina/localhost"
+    [ -d "$lhpath" ] || continue
+    for xml in "$lhpath"/*.xml; do
+      [ -f "$xml" ] || continue
+      produto=$(basename "$xml" .xml)
+      versao=$(grep -oP 'docBase="[^"]*products/[^/]+/\\K[^/]+' "$xml" 2>/dev/null | head -1)
+      [ -z "$versao" ] && versao=$(grep -oP '\\d{4}\\.\\d+\\.\\d+-[A-Z]+' "$xml" 2>/dev/null | head -1)
+      [ -z "$versao" ] && versao="unknown"
+      echo "$tomcat|$produto|$versao"
+    done
+  done
+done
+    `.trim();
+
     try {
-      const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, CMD);
+      const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, dynamicCMD);
       const tomcats = parseVersionOutput(raw);
+      
+      // Update cache
+      if (!tomcatCache[machine.ip]) tomcatCache[machine.ip] = {};
+      for (const [tomcat, prods] of Object.entries(tomcats)) {
+        for (const p of prods) {
+          tomcatCache[machine.ip][p.produto] = tomcat;
+        }
+      }
+      
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, tomcats });
     } catch (e) {
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: false, error: e.message, tomcats: {} });
     }
   }
+
+  saveTomcatCache();
 
   res.json({ success: true, results });
 });
