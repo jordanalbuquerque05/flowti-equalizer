@@ -270,7 +270,7 @@ echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_por
     const cmd = `sudo su << 'EOF'
 ${findTomcatLogic}
 echo ">> [1/3] Executando: tomcatctl stop $tomcat_port"
-tomcatctl stop "$tomcat_port"
+bash -x $(which tomcatctl) stop "$tomcat_port" 2>&1
   if [ $? -ne 0 ]; then
     echo "❌ STOP falhou para o Tomcat $tomcat_port — abortando sequência."
     exit 1
@@ -278,7 +278,7 @@ tomcatctl stop "$tomcat_port"
   echo "✅ STOP concluído."
 
   echo ">> [2/3] Executando: tomcatctl cleanup $tomcat_port"
-  tomcatctl cleanup "$tomcat_port"
+  bash -x $(which tomcatctl) cleanup "$tomcat_port" 2>&1
   if [ $? -ne 0 ]; then
     echo "❌ CLEANUP falhou para o Tomcat $tomcat_port — abortando sequência."
     exit 1
@@ -286,7 +286,7 @@ tomcatctl stop "$tomcat_port"
   echo "✅ CLEANUP concluído."
 
   echo ">> [3/3] Executando: tomcatctl start $tomcat_port"
-  tomcatctl start "$tomcat_port"
+  bash -x $(which tomcatctl) start "$tomcat_port" 2>&1
   if [ $? -ne 0 ]; then
     echo "❌ START falhou para o Tomcat $tomcat_port"
     exit 1
@@ -958,6 +958,12 @@ echo "----------------------------------------"
 echo "Processando produto: ${upd.produto} -> Alvo: ${upd.novaVersao}"
 for xml in /MV/servers/*/*/conf/Catalina/localhost/${upd.produto}.xml; do
   if [ -f "$xml" ]; then
+    # Verificar se a pasta da release realmente existe
+    if [ ! -d "/MV/app/soul/products/${upd.produto}/${upd.novaVersao}" ]; then
+      echo "❌ A release ${upd.novaVersao} NÃO EXISTE no servidor para o produto ${upd.produto}. Ignorando!"
+      continue
+    fi
+
     # Extrair nome do tomcat da string de path
     tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
     
