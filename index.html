@@ -1603,12 +1603,7 @@ function renderMachines(machines, codigo) {
   header.innerHTML = `
     <div class="client-header-title">
       <div class="client-header-code">Cliente ${codigo}</div>
-      <div class="client-header-subtitle">${machines.length} máquinas BAL encontradas</div>
-    </div>
-    <div class="filter-tabs">
-      <button class="filter-tab active-tab" onclick="setFilter('all', this)">Todas (${machines.length})</button>
-      <button class="filter-tab prd-tab" onclick="setFilter('prd', this)">PRD (${prd.length})</button>
-      <button class="filter-tab tst-tab" onclick="setFilter('tst', this)">TST (${tst.length})</button>
+      <div class="client-header-subtitle">Gestão de SOUL</div>
     </div>
   `;
   $mainContent.appendChild(header);
@@ -1619,114 +1614,6 @@ function renderMachines(machines, codigo) {
   $mainContent.appendChild(soulPanel);
   loadSoulPanel(codigo);
 
-  const sectionsContainer = document.createElement('div');
-  sectionsContainer.id = 'sectionsContainer';
-  $mainContent.appendChild(sectionsContainer);
-
-  renderSections(machines);
-}
-
-function renderSections(machines) {
-  const container = document.getElementById('sectionsContainer');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const filter = state.filter;
-  const filtered = filter === 'prd'
-    ? machines.filter(m => m.ambiente === 'PRD')
-    : filter === 'tst'
-    ? machines.filter(m => m.ambiente === 'TST')
-    : machines;
-
-  const groups = {};
-  for (const m of filtered) {
-    const key = m.ambiente || 'OUTROS';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(m);
-  }
-
-  const order = ['PRD', 'TST', 'OUTROS', 'UNKNOWN'];
-  for (const env of [...order, ...Object.keys(groups).filter(k => !order.includes(k))]) {
-    if (!groups[env]) continue;
-    const section = document.createElement('div');
-    section.className = 'env-section';
-    const envLow = env.toLowerCase();
-
-    section.innerHTML = `
-      <div class="env-section-header">
-        <span class="env-badge ${envLow === 'prd' ? 'prd' : 'tst'}">${env}</span>
-        <div class="env-section-line"></div>
-        <span class="env-count">${groups[env].length} máquina${groups[env].length !== 1 ? 's' : ''}</span>
-      </div>
-      <div class="machines-grid" id="grid-${env}"></div>
-    `;
-    container.appendChild(section);
-
-    const grid = section.querySelector(`#grid-${env}`);
-    for (const m of groups[env]) {
-      grid.appendChild(createMachineCard(m));
-    }
-  }
-}
-
-function setFilter(f, btn) {
-  state.filter = f;
-  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active-tab'));
-  btn.classList.add('active-tab');
-  renderSections(state.machines);
-}
-
-function createMachineCard(m) {
-  const envLow = (m.ambiente || '').toLowerCase();
-  const tenancyClass = m.tenancy ? m.tenancy : 'UNKNOWN';
-
-  const card = document.createElement('div');
-  card.className = `machine-card ${envLow}`;
-  card.dataset.hostname = m.hostname;
-
-  const sshPwd = m.sshPassword || m.senha || '—';
-
-  card.innerHTML = `
-    <div class="card-top">
-      <div class="card-hostname">${m.hostname}</div>
-      <div class="card-env-dot ${envLow}"></div>
-    </div>
-    <div class="card-details">
-      <div class="card-detail-row">
-        <span class="card-detail-label">IP Priv.</span>
-        <span class="card-detail-val ip">${m.ip || '—'}</span>
-      </div>
-      <div class="card-detail-row">
-        <span class="card-detail-label">IP Púb.</span>
-        <span class="card-detail-val ip" style="color: var(--accent);">${m.public_ip || '—'}</span>
-      </div>
-      <div class="card-detail-row">
-        <span class="card-detail-label">DNS</span>
-        <span class="card-detail-val dns" title="${m.dns || ''}">${m.dns || '—'}</span>
-      </div>
-      <div class="card-detail-row">
-        <span class="card-detail-label">Tenancy</span>
-        <span class="tenancy-tag ${tenancyClass}">${m.tenancy || 'N/D'}</span>
-      </div>
-    </div>
-    <div class="card-actions">
-      <button class="btn-connect" onclick="connectSSH(${JSON.stringify(m).replace(/"/g, '&quot;')})">
-        ⚡ Conectar
-      </button>
-      <button class="btn-copy" title="Copiar IP" onclick="copyToClipboard('${m.ip}', 'IP copiado!')">📋</button>
-    </div>
-  `;
-  return card;
-}
-
-// ─── Copy to clipboard ────────────────────────────────────────────────────────
-function copyToClipboard(text, msg) {
-  navigator.clipboard.writeText(text).then(() => {
-    showNotif(msg || `Copiado: ${text}`, 'ok');
-  }).catch(() => {
-    showNotif('Falha ao copiar', 'err');
-  });
-}
 
 // ─── API calls ────────────────────────────────────────────────────────────────
 async function loadClients() {
