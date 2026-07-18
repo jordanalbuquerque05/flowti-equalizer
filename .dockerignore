@@ -1,0 +1,27 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# Generated reports / audit files
+relatorio_dns_bals.md
+inventario_geral_maquinas.md
+
+# Git
+.git/
+.gitignore
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker files themselves (not needed inside image)
+docker-compose*.yml
+Dockerfile*
+.dockerignore

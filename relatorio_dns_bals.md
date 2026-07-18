@@ -1,0 +1,1036 @@
+# Relatório de Auditoria de DNS (Máquinas BAL)
+
+**Total de Máquinas BAL avaliadas:** 1022
+**Atualizadas:** 0
+**Mantidas (Já corretas):** 0
+**Falharam (Timeout, Senha errada, Sem arquivo):** 1022
+
+## Máquinas Atualizadas
+*Nenhuma máquina precisou ser atualizada.*
+
+## Máquinas Corretas
+*Nenhuma máquina estava 100% correta.*
+
+## Falhas / Não acessíveis
+- **0232TST1-BAL-LNX01**: No DNS found in config
+- **0232PRD-BAL-LNX01**: No DNS found in config
+- **0246PRD-BAL-LNX01**: No DNS found in config
+- **0232prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0232tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0246PRD-BAL-APOIO-LNX01**: Connection error: Timed out while waiting for handshake
+- **0246PRD-BAL-HOSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **0246PRD-BAL-PEP-LNX01**: Connection error: Timed out while waiting for handshake
+- **0246PRD-BAL-REPORT-LNX01**: Connection error: Timed out while waiting for handshake
+- **0246PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **0257PRD-BAL-LNX01**: No DNS found in config
+- **0257PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **0257PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **0257PRD-BAL-SOUL-LNX01**: No DNS found in config
+- **0257PRD-BAL-PEP-LNX01**: No DNS found in config
+- **0257TST1-BAL-LNX01**: No DNS found in config
+- **0260PRD-BAL-LNX01**: No DNS found in config
+- **0246TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0286TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0294PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0360PRD-BAL-LNX01**: No DNS found in config
+- **0360PRD-BAL-ERP-LNX01**: No DNS found in config
+- **0360PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **0341PRD-BAL-LNX01**: No DNS found in config
+- **0294TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0341prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0360prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **0360prd-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **0360prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0360prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **0458PRD-BAL-LNX01**: No DNS found in config
+- **0360PRD-BAL-PEP-LNX01**: No DNS found in config
+- **0360TST1-BAL-LNX01**: No DNS found in config
+- **0425PRD-BAL-LNX01**: No DNS found in config
+- **0360tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0425PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **0425TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0458TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0460PRD-BAL-APOIO-LNX01**: Connection error: Timed out while waiting for handshake
+- **0460PRD-BAL-HOSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **0473PRD-BAL-LNX01**: No DNS found in config
+- **0476PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **0476PRD-BAL-LNX01**: No DNS found in config
+- **0476PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **0460PRD-BAL-LNX01**: No DNS found in config
+- **0460TST1-BAL-LNX01**: No DNS found in config
+- **0460PRD-BAL-PEP-LNX01**: Connection error: Timed out while waiting for handshake
+- **0460PRD-BAL-PLANO-LNX01**: Connection error: Timed out while waiting for handshake
+- **0460PRD-BAL-REPORT-LNX01**: Connection error: Timed out while waiting for handshake
+- **0473TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0476TST1-BAL-LNX01**: No DNS found in config
+- **0618PRD-BAL-ERP-LNX01**: No DNS found in config
+- **0618PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **0618PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **0495PRD2-BAL-LNX01**: No DNS found in config
+- **0495prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618prd-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618prd-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618TST1-BAL-LNX01**: No DNS found in config
+- **0618PRD-BAL-LNX01**: No DNS found in config
+- **0618PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **0618PRD-BAL-PEP-LNX01**: No DNS found in config
+- **0659PRD-BAL-LNX01**: No DNS found in config
+- **0618prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618prd-bal-report-lnx01**: Connection error: Timed out while waiting for handshake
+- **0618tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0659prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0659PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **0717PRD-BAL-LNX01**: No DNS found in config
+- **0659TST1-BAL-LNX01**: No DNS found in config
+- **0660PRD2-BAL-LNX01**: No DNS found in config
+- **0661TST1-BAL-LNX01**: No DNS found in config
+- **0661PRD2-BAL-LNX01**: No DNS found in config
+- **0659tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0660prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0660tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0660TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0661PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0718TST1-BAL-LNX01**: No DNS found in config
+- **0718PRD2-BAL-LNX01**: No DNS found in config
+- **0852PRD2-BAL-LNX01**: No DNS found in config
+- **0717TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0718prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0718prd2-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **0718PRD2-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **0718tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0852PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0852prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0940PRD-BAL-LNX01**: No DNS found in config
+- **0864PRD-BAL-LNX01**: No DNS found in config
+- **10013PRD-BAL-LNX01**: No DNS found in config
+- **0852tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0852TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0864prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0864TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **0940prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0940tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **0940TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1019PRD-BAL-LNX01**: No DNS found in config
+- **1017PRD-BAL-LNX01**: No DNS found in config
+- **1017TST1-BAL-LNX01**: No DNS found in config
+- **10153TST1-BAL-LNX01**: No DNS found in config
+- **10013TST1-BAL-LNX01**: No DNS found in config
+- **10048PRD-BAL-LNX01**: No DNS found in config
+- **10153PRD-BAL-LNX01**: No DNS found in config
+- **C10085PRD-DOMPEDRO-BAL**: No DNS found in config
+- **10013PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **10048TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10296PRD-BAL-LNX01**: No DNS found in config
+- **10233PRD-BAL-LNX01**: No DNS found in config
+- **10206TST1-BAL-LNX01**: No DNS found in config
+- **10209TST1-BAL-LNX01**: No DNS found in config
+- **10209PRD-BAL-LNX01**: No DNS found in config
+- **10206PRD-BAL-LNX01**: No DNS found in config
+- **10210PRD-BAL-LNX01**: No DNS found in config
+- **1019PRD-BAL-LNX02**: Connection error: Timed out while waiting for handshake
+- **1019TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10210TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10477PRD-BAL-LNX01**: No DNS found in config
+- **10429PRD-BAL-LNX01**: No DNS found in config
+- **10296TST1-BAL-LNX01**: No DNS found in config
+- **10441PRD-BAL-LNX01**: No DNS found in config
+- **10429TST1-BAL-LNX01**: No DNS found in config
+- **10344TST1-BAL-LNX01**: No DNS found in config
+- **10477TST1-BAL-LNX01**: No DNS found in config
+- **10344PRD-BAL-LNX01**: No DNS found in config
+- **10429PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **10441TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10928PRD-BAL-LNX01**: No DNS found in config
+- **10484PRD-BAL-LNX01**: No DNS found in config
+- **10907PRD-BAL-LNX01**: No DNS found in config
+- **10869PRD-BAL-LNX01**: No DNS found in config
+- **10903PRD-BAL-LNX01**: No DNS found in config
+- **10484TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10869TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10903TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10907TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10928TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **10979PRD-BAL-LNX01**: No DNS found in config
+- **11061PRD-BAL-LNX01**: No DNS found in config
+- **10962PRD-BAL-LNX01**: No DNS found in config
+- **10979TST1-BAL-LNX01**: No DNS found in config
+- **11061PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **11061PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **11009PRD-BAL-LNX01**: No DNS found in config
+- **10962TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **11009TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **11061PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1108TST1-BAL-LNX01**: No DNS found in config
+- **1108PRD-BAL-LNX01**: No DNS found in config
+- **1113TST1-BAL-LNX01**: No DNS found in config
+- **1113PRD-BAL-LNX01**: No DNS found in config
+- **11079TST1-BAL-LNX01**: No DNS found in config
+- **11061TST1-BAL-LNX01**: No DNS found in config
+- **11079PRD-BAL-LNX01**: No DNS found in config
+- **1113prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1113tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1116prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1116PRD-BAL-LNX01**: No DNS found in config
+- **11230PRD-BAL-LNX01**: No DNS found in config
+- **11206PRD-BAL-LNX01**: No DNS found in config
+- **11230PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **11214PRD-BAL-LNX01**: No DNS found in config
+- **11206TST1-BAL-LNX01**: No DNS found in config
+- **11218TST1-BAL-LNX01**: No DNS found in config
+- **11214TST1-BAL-LNX01**: No DNS found in config
+- **11218PRD-BAL-LNX01**: No DNS found in config
+- **11230TST1-BAL-LNX01**: No DNS found in config
+- **11331PRD-BAL-LNX01**: No DNS found in config
+- **1307PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **1307PRD-BAL-ERP-LNX01**: No DNS found in config
+- **1307PRD-BAL-ERP-LNX02**: No DNS found in config
+- **1307PRD-BAL-APOIO-LNX02**: No DNS found in config
+- **11299PRD-BAL-APOIO-LNX01**: Connection error: Timed out while waiting for handshake
+- **11299PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **11299PRD-BAL-REPORT-LNX01**: Connection error: Timed out while waiting for handshake
+- **11299PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **11299TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1307PRD-GLOBALH-LNX01**: Connection error: All configured authentication methods failed
+- **1307TST1-BAL-LNX01**: No DNS found in config
+- **1307PRD-BAL-LNX01**: No DNS found in config
+- **1307PRD-BAL-LNX02**: No DNS found in config
+- **1307PRD-BAL-PEP-LNX02**: No DNS found in config
+- **1307PRD-BAL-REPORT-LNX02**: No DNS found in config
+- **1307PRD-BAL-HOSP-LNX02**: No DNS found in config
+- **1307PRD-BAL-HOSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **1307PRD-BAL-PEP-LNX01**: Connection error: Timed out while waiting for handshake
+- **1307TST1-BAL-LNX01-OEL7-9**: Connection error: Timed out while waiting for handshake
+- **1308PRD-BAL-LNX01**: No DNS found in config
+- **1495PRD-BAL-LNX01**: No DNS found in config
+- **1307TST1-BAL-LNX01-OL6-10**: Connection error: Timed out while waiting for handshake
+- **1308prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1308TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1495prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1495TST1-BAL-LNX02**: Connection error: Timed out while waiting for handshake
+- **1502-B-PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1502-D-PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1502PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1628TST1-BAL-LNX01**: No DNS found in config
+- **1628PRD-BAL-LNX01**: No DNS found in config
+- **1732PRD-BAL-LNX01**: No DNS found in config
+- **1624TST1-BAL-LNX01**: No DNS found in config
+- **1624PRD-BAL-LNX01**: No DNS found in config
+- **1502PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1624prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1624tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1732prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1732prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **1741PRD-BAL-LNX01**: No DNS found in config
+- **1741TST1-BAL-LNX01**: No DNS found in config
+- **1732TST1-BAL-LNX01**: No DNS found in config
+- **1769PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **1736PRD-BAL-LNX01**: No DNS found in config
+- **1732PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1732tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1736prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769prd-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **1769PRD-BAL-PEP-LNX01**: No DNS found in config
+- **1769PRD-BAL-LNX01**: No DNS found in config
+- **1769PRD-BAL-ERP-LNX01**: No DNS found in config
+- **1769prd-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **1769PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1769tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1801PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **1801PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **1801PRD-BAL-LNX01**: No DNS found in config
+- **1801PRD-BAL-PEP-LNX01**: No DNS found in config
+- **1769TST1-BAL-LNX01**: No DNS found in config
+- **1799PRD-BAL-LNX02**: No DNS found in config
+- **1799PRD-BAL-LNX01**: No DNS found in config
+- **1799prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1799prd-bal-lnx02**: Connection error: Timed out while waiting for handshake
+- **1799TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1801TST1-BAL-LNX01**: No DNS found in config
+- **1801PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **1832TST1-BAL-LNX01**: No DNS found in config
+- **1832PRD-BAL-LNX01**: No DNS found in config
+- **1843PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **1843PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **1843PRD-BAL-ERP-LNX01**: No DNS found in config
+- **1843prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **1843prd-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **1843prd-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863PRD-BAL-ERP-LNX01**: No DNS found in config
+- **1852TST1-BAL-LNX01**: No DNS found in config
+- **1843PRD-BAL-LNX01**: No DNS found in config
+- **1843PRD-BAL-PEP-LNX01**: No DNS found in config
+- **1852PRD-BAL-LNX01**: No DNS found in config
+- **1843prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1843prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **1843prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **1843PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1852prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863PRD-BAL-PEP-LNX01**: No DNS found in config
+- **1863TST1-BAL-LNX01**: No DNS found in config
+- **1863PRD-BAL-LNX01**: No DNS found in config
+- **1863PRD-BAL-SAUDE-PUBLICA-LNX01**: No DNS found in config
+- **1863prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863prd-bal-saude-publica-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863prd-bal-soul-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863tst1-bal-saude-publica-lnx01**: Connection error: Timed out while waiting for handshake
+- **1863TST1-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **1919PRD-BAL-LNX01**: File probably not found or access denied, code: 1
+- **1912PRD-BAL-LNX01**: No DNS found in config
+- **1907PRD-BAL-LNX01**: No DNS found in config
+- **1919TST1-BAL-LNX01**: File probably not found or access denied, code: 1
+- **1907TST1-BAL-LNX01**: No DNS found in config
+- **1912TST1-BAL-LNX01**: No DNS found in config
+- **1907prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1907tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1912prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1933PRD-BAL-LNX01**: No DNS found in config
+- **1920TST1-BAL-LNX01**: No DNS found in config
+- **1920PRD-BAL-LNX01**: No DNS found in config
+- **1920prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1920tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1933prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1933prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **1933PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1933tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1933TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1940TST1-BAL-LNX01**: No DNS found in config
+- **1940PRD-BAL-LNX01**: No DNS found in config
+- **1940PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **1940prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **1940prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1940prd-globalhealth-lnx01**: Connection error: Timed out while waiting for handshake
+- **1940PRD-GLOBALHEALTH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1940tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1940tst1-globalhealth-lnx01**: Connection error: Timed out while waiting for handshake
+- **1940TST1-GLOBALHEALTH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1971PRD-BAL-LNX01**: No DNS found in config
+- **1975PRD-BAL-LNX01**: No DNS found in config
+- **1975PRD2-BAL-LNX01**: No DNS found in config
+- **1971prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1971tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1971TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **1975PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1975PRD2-BAL-LNX-01**: Connection error: Timed out while waiting for handshake
+- **1975prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **1975prd2-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030PRD2-BAL-APOIO-LNX01**: No DNS found in config
+- **2011TST1-BAL-LNX01**: No DNS found in config
+- **1975TST1-BAL-LNX-01**: No DNS found in config
+- **2011PRD-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **1975PRD2-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **1975tst1-bal-lnx-01**: Connection error: Timed out while waiting for handshake
+- **1975tst1-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **1975TST1-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2011PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2030prd2-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030PRD2-BAL-LNX01**: No DNS found in config
+- **2030PRD2-BAL-ERP-LNX01**: No DNS found in config
+- **2030PRD2-BAL-PEP-LNX01**: No DNS found in config
+- **2030PRD2-BAL-HOSP-LNX01**: No DNS found in config
+- **2030PRD2-BAL-REPORT-LNX01**: No DNS found in config
+- **2030prd2-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030prd2-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030prd2-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **2030prd2-bal-report-lnx01**: Connection error: Timed out while waiting for handshake
+- **2032TST1-BAL-LNX01**: No DNS found in config
+- **2032PRD-BAL-LNX01**: No DNS found in config
+- **2041PRD-BAL-LNX01**: No DNS found in config
+- **2041PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **2030TST1-BAL-LNX01**: No DNS found in config
+- **2030tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-APOIO-LNX-01**: Connection error: Timed out while waiting for handshake
+- **2041prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-LNX-01**: Connection error: Timed out while waiting for handshake
+- **2041prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **2041PRD-BAL-PEP-LNX01**: No DNS found in config
+- **2041PRD-BAL-SOUL-LNX01**: No DNS found in config
+- **2041PRD-BAL-PEP-LNX-01**: Connection error: Timed out while waiting for handshake
+- **2041prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-REPORT-LNX-01**: Connection error: Timed out while waiting for handshake
+- **2041prd-bal-report-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-SOUL-LNX-01**: Connection error: Timed out while waiting for handshake
+- **2041PRD-BAL-SOUL-LNX-02**: Connection error: Timed out while waiting for handshake
+- **2041prd-bal-soul-lnx01**: Connection error: Timed out while waiting for handshake
+- **2041TST1-BAL-LNX-01**: File probably not found or access denied, code: 1
+- **2041PRD-BAL-SOUL-LNX02**: No DNS found in config
+- **2048PRD-BAL-LNX01**: No DNS found in config
+- **2041TST1-BAL-LNX01**: No DNS found in config
+- **2041prd-bal-soul-lnx02**: Connection error: Timed out while waiting for handshake
+- **2041tst1-bal-lnx-01**: Connection error: Timed out while waiting for handshake
+- **2041tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2048prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2048TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2054PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2060PRD-BAL-LNX01**: No DNS found in config
+- **2054TST1-BAL-LNX01**: No DNS found in config
+- **2054PRD-BAL-LNX02**: No DNS found in config
+- **2054TST1-BAL-LNX02**: No DNS found in config
+- **2054prd-bal-lnx02**: Connection error: Timed out while waiting for handshake
+- **2054tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2054tst1-bal-lnx02**: Connection error: Timed out while waiting for handshake
+- **2060prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2060TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-APOIO-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-APOIO-LNX02**: No DNS found in config
+- **2066PRD-BAL-LNX02**: No DNS found in config
+- **2066PRD-BAL-PEP-LNX02**: Connection error: All configured authentication methods failed
+- **2066PRD-BAL-HOSP-LNX02**: Connection error: All configured authentication methods failed
+- **2066PRD-BAL-ERP-LNX02**: Connection error: All configured authentication methods failed
+- **2066PRD-BAL-ERP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-HOSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-PEP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2066PRD-BAL-REPORT-LNX01**: Connection error: Timed out while waiting for handshake
+- **2082TST1-BAL-LNX01**: No DNS found in config
+- **2082PRD-BAL-LNX01**: No DNS found in config
+- **2080TST1-BAL-LNX01**: No DNS found in config
+- **2066TST1-BAL-LNX01**: No DNS found in config
+- **2080PRD-BAL-LNX01**: No DNS found in config
+- **2066PRD-BAL-REPORT-LNX02**: No DNS found in config
+- **2066PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2080prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2080tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2082prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2119PRD-BAL-LNX01**: No DNS found in config
+- **2201PRD-BAL-LNX01**: No DNS found in config
+- **2219PRD-BAL-LNX01**: No DNS found in config
+- **2219TST1-BAL-LNX01**: No DNS found in config
+- **2119prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2119TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2201TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2219prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2219tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2220PRD-BAL-AMB-LNX01**: Connection error: Timed out while waiting for handshake
+- **2220PRD-BAL-LNX01**: File probably not found or access denied, code: 1
+- **2220TST1-BAL-LNX01**: No DNS found in config
+- **2234PRD-BAL-LNX01**: No DNS found in config
+- **2220prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2220PRD-BAL-REG-LNX01**: Connection error: Timed out while waiting for handshake
+- **2220tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2234prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2234prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **2234PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2234tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2267PRD-BAL-LNX01**: No DNS found in config
+- **2234TST1-BAL-LNX01**: No DNS found in config
+- **2244PRD-BAL-LNX01**: No DNS found in config
+- **2244TST1-BAL-LNX01**: No DNS found in config
+- **2244prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2252PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2252TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2267prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2267prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **2267PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2267TST1-BAL-LNX01**: No DNS found in config
+- **2281PRD-BAL-LNX01**: No DNS found in config
+- **2280PRD-BAL-LNX01**: No DNS found in config
+- **2267tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2280TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2281prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2281TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2299PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2299TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2311prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2338PRD-BAL-LNX01**: No DNS found in config
+- **2338TST1-BAL-LNX01**: No DNS found in config
+- **2324PRD-BAL-LNX01**: No DNS found in config
+- **2311TST1-BAL-LNX01**: No DNS found in config
+- **2311PRD-BAL-LNX01**: No DNS found in config
+- **2324TST1-BAL-LNX01**: No DNS found in config
+- **2311tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2324prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2324prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **2324PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2341TST1-BAL-LNX01**: No DNS found in config
+- **2341PRD-BAL-ERP-LNX01**: No DNS found in config
+- **2341PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **2341PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **2341PRD-BAL-LNX01**: No DNS found in config
+- **2341PRD-BAL-PEP-LNX01**: No DNS found in config
+- **2341PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **2356PRD-BAL-APOIO-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-APOIO-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-ERP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-ERP-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-HOSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-HOSP-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-PEP-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-PEP-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-REPORT-LNX01**: Connection error: Timed out while waiting for handshake
+- **2356PRD-BAL-REPORT-LNX02**: Connection error: Timed out while waiting for handshake
+- **2356PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2361PRD-BAL-LNX01**: No DNS found in config
+- **C2356-PRD-BAL-LNX01**: No DNS found in config
+- **2356TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **C2356-PRD-BAL-LNX02**: Connection error: Timed out while waiting for handshake
+- **C2356-PRD-BAL-LNX03**: Connection error: Timed out while waiting for handshake
+- **C2356-PRD-BAL-LNX04**: Connection error: Timed out while waiting for handshake
+- **C2356-PRD-BAL-LNX05**: Connection error: Timed out while waiting for handshake
+- **C2356-PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **C2356PRD-SAUDEPUBLICA-BAL**: Connection error: Timed out while waiting for handshake
+- **2361prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2361TST1-BAL-LNX01**: No DNS found in config
+- **2404PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **2401PRD-BAL-LNX01**: No DNS found in config
+- **2361PRD-GLOBALHEALTH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2361tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2401prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2401tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2401TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2404prd-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **2404prd-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **2404TST1-BAL-LNX01**: No DNS found in config
+- **2404PRD-BAL-LNX01**: No DNS found in config
+- **2404PRD-BAL-ERP-LNX01**: No DNS found in config
+- **2425PRD-BAL-LNX01**: No DNS found in config
+- **2404PRD-BAL-PEP-LNX01**: No DNS found in config
+- **2404prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2404prd-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **2404tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2425TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2441prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2486PRD-BAL-LNX01**: No DNS found in config
+- **2486TST1-BAL-LNX01**: No DNS found in config
+- **2491TST1-BAL-LNX01**: No DNS found in config
+- **2441TST1-BAL-LNX01**: No DNS found in config
+- **2491PRD-BAL-LNX01**: No DNS found in config
+- **2441PRD-BAL-LNX01**: No DNS found in config
+- **2441tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2486PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2493PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2493TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2568PRD-BAL-LNX01**: No DNS found in config
+- **2568TST1-BAL-LNX01**: No DNS found in config
+- **2555TST1-BAL-LNX01**: No DNS found in config
+- **2573PRD-BAL-LNX01**: No DNS found in config
+- **2555PRD-BAL-LNX01**: No DNS found in config
+- **2555PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2568prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2568tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2573TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2576prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2616PRD-BAL-LNX01**: No DNS found in config
+- **2655PRD-BAL-LNX01**: No DNS found in config
+- **2576PRD-BAL-LNX01**: No DNS found in config
+- **2698PRD-BAL-LNX01**: No DNS found in config
+- **2576tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2576TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2616prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2616TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2698prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2698tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **2896PRD-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **2896TST1-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **2896PRD-BAL-LNX01**: No DNS found in config
+- **2896TST1-BAL-LNX01**: No DNS found in config
+- **2894PRD-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **2894PRD-BAL-LNX01**: No DNS found in config
+- **2894TST1-BAL-LNX01**: No DNS found in config
+- **2894TST1-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **2698TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2894PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **2977PRD-BAL-LNX01**: No DNS found in config
+- **2976PRD-BAL-LNX01**: No DNS found in config
+- **3009PRD-BAL-LNX02**: No DNS found in config
+- **2976TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **2977TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3009PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3009prd-bal-lnx02**: Connection error: Timed out while waiting for handshake
+- **3009prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **3009PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **3009tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3013TST1-BAL-LNX01**: No DNS found in config
+- **3013PRD-BAL-LNX01**: No DNS found in config
+- **3014PRD-BAL-LNX01**: No DNS found in config
+- **3014TST1-BAL-LNX01**: No DNS found in config
+- **3009TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3014prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3014prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **3014PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **3014tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3030prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3088PRD-BAL-LNX01**: No DNS found in config
+- **3094TST1-BAL-LNX01**: No DNS found in config
+- **3094PRD-BAL-LNX01**: No DNS found in config
+- **3030TST1-BAL-LNX01**: No DNS found in config
+- **3043PRD-BAL-LNX01**: No DNS found in config
+- **3030PRD-BAL-LNX01**: No DNS found in config
+- **3030tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3043prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3043TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3088TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **C3126PRD-PARANAVAI-BAL**: No DNS found in config
+- **C3102PRD-CISVALI-BAL**: No DNS found in config
+- **C3133PRD-CORONELDOMINGOSSOARES-BAL**: Connection error: Timed out while waiting for handshake
+- **C3147PRD-SAOJOAOTRIUNFO-BAL**: Connection error: Timed out while waiting for handshake
+- **C3151PRD-CAPITAOLEONIDAS-BAL**: Connection error: Timed out while waiting for handshake
+- **C3155PRD-RONCADOR-BAL**: Connection error: Timed out while waiting for handshake
+- **C3184PRD-SAUDEPUBLICA-BAL**: Connection error: Timed out while waiting for handshake
+- **3196PRD-BAL-SSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **3196TST1-BAL-SSP-LNX01**: Connection error: Timed out while waiting for handshake
+- **C3206PRD-QUATROPONTES-BAL**: Connection error: Timed out while waiting for handshake
+- **3305PRD-BAL-LNX01**: No DNS found in config
+- **3285PRD-BAL-LNX01**: No DNS found in config
+- **3232PRD-BAL-LNX01**: No DNS found in config
+- **3232TST1-BAL-LNX01**: No DNS found in config
+- **3285prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3285tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3285TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3305prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3305tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3305TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3323PRD-BAL-HOSP-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-APOIO-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-REGULACAO-LNX01**: Connection error: All configured authentication methods failed
+- **3323TST1-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-AMBULAT-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-ERP-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-REPORT-LNX01**: Connection error: All configured authentication methods failed
+- **3323PRD-BAL-PEP-LNX01**: Connection error: All configured authentication methods failed
+- **3326prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3418TST1-BAL-LNX01**: No DNS found in config
+- **3418PRD-BAL-LNX01**: No DNS found in config
+- **3326PRD-BAL-LNX01**: No DNS found in config
+- **3334PRD-BAL-LNX01**: No DNS found in config
+- **3326TST1-BAL-LNX01**: No DNS found in config
+- **3326tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3334TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3357PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3357TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3428prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3440PRD-BAL-PLANO-LNX01**: No DNS found in config
+- **3440PRD-BAL-LNX01**: No DNS found in config
+- **3428TST1-BAL-LNX01**: No DNS found in config
+- **3428PRD-BAL-LNX01**: No DNS found in config
+- **3428tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3440TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3442PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3442PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **3442TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3542prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3621TST1-BAL-LNX01**: No DNS found in config
+- **3542PRD-BAL-LNX01**: No DNS found in config
+- **3621PRD-BAL-LNX01**: No DNS found in config
+- **3602PRD-BAL-LNX01**: No DNS found in config
+- **3542TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3602prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3602tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3602TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3621prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3621tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3676PRD-BAL-LNX01**: No DNS found in config
+- **3686TST1-BAL-LNX01**: No DNS found in config
+- **3686PRD-BAL-LNX01**: No DNS found in config
+- **3673PRD-BAL-LNX01**: No DNS found in config
+- **3738PRD-BAL-SAUDE-PUBLICA-LNX01**: No DNS found in config
+- **3673prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3673TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3676prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3676TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3686prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3778TST1-BAL-LNX01**: No DNS found in config
+- **3778PRD-BAL-LNX01**: No DNS found in config
+- **3837PRD-BAL-LNX01**: No DNS found in config
+- **3857PRD-BAL-LNX01**: No DNS found in config
+- **3738TST1-BAL-SAUDE-PUBLICA-LNX01**: No DNS found in config
+- **3857TST1-BAL-LNX01**: No DNS found in config
+- **3778prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3778tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3837prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3837TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3909PRD-BAL-LNX01**: No DNS found in config
+- **3909TST1-BAL-LNX01**: No DNS found in config
+- **3874PRD-BAL-LNX01**: No DNS found in config
+- **3874TST1-BAL-LNX01**: No DNS found in config
+- **3874prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3874tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3880PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3880TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **3909prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **3909tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4137TST1-BAL-LNX01**: No DNS found in config
+- **4166PRD-BAL-LNX01**: No DNS found in config
+- **4137PRD-BAL-LNX01**: No DNS found in config
+- **4139TST1-BAL-LNX01**: No DNS found in config
+- **4139PRD-BAL-LNX01**: No DNS found in config
+- **4139PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **4137prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4137tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4166prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4166TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4168PRD-BAL-LNX01**: No DNS found in config
+- **4210PRD-BAL-LNX01**: No DNS found in config
+- **4306PRD-BAL-LNX01**: No DNS found in config
+- **4327TST1-BAL-LNX01**: No DNS found in config
+- **4327PRD-BAL-LNX01**: No DNS found in config
+- **4168prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4168TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4210prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4210TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4306TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4676PRD-BAL-LNX01**: No DNS found in config
+- **4687PRD-BAL-LNX01**: No DNS found in config
+- **4676TST1-BAL-LNX01**: No DNS found in config
+- **4668PRD-BAL-LNX01**: File probably not found or access denied, code: 1
+- **4615PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4615TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4668prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4676prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4676tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4687prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4687TST1-BAL-LNX01**: No DNS found in config
+- **4692TST1-BAL-LNX01**: No DNS found in config
+- **4692PRD-BAL-LNX01**: No DNS found in config
+- **4794PRD-BAL-LNX01**: No DNS found in config
+- **4692prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4692tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4699PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4699PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **4699TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4794prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4811PRD-BAL-LNX01**: No DNS found in config
+- **4794PRD-BAL-SAUDE-PUBLICA-LNX01**: File probably not found or access denied, code: 1
+- **4826PRD2-BAL-LNX01**: No DNS found in config
+- **4794prd-bal-saude-publica-lnx01**: Connection error: Timed out while waiting for handshake
+- **4794TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4811prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4811TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4826PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4826prd2-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4826tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4906PRD-BAL-LNX01**: No DNS found in config
+- **4873PRD-BAL-LNX01**: No DNS found in config
+- **4873TST1-BAL-LNX01**: No DNS found in config
+- **4826TST1-BAL-LNX01**: No DNS found in config
+- **4848PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4848TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4873prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4873tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4906prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4906tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4992PRD-BAL-LNX01**: No DNS found in config
+- **4939PRD-BAL-LNX01**: No DNS found in config
+- **5011PRD-BAL-LNX01**: No DNS found in config
+- **4906TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4933prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4933PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4939prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4939TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **4992prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **4992TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5015PRD-BAL-LNX01**: No DNS found in config
+- **5015TST1-BAL-LNX01**: No DNS found in config
+- **5340PRD-BAL-LNX01**: No DNS found in config
+- **5257PRD-BAL-LNX01**: No DNS found in config
+- **5257TST1-BAL-LNX01**: No DNS found in config
+- **5011TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5015PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **5340prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5340TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5344prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5347TST1-BAL-LNX01**: No DNS found in config
+- **5347PRD-BAL-LNX01**: No DNS found in config
+- **5344PRD-BAL-LNX01**: No DNS found in config
+- **5505PRD-BAL-LNX01**: No DNS found in config
+- **5344TST1-BAL-LNX01**: No DNS found in config
+- **5344tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5505prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5505tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5505TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5507prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5511PRD-BAL-LNX01**: No DNS found in config
+- **5507PRD-BAL-LNX01**: No DNS found in config
+- **5507PRD-GLOBALHEALTH-LNX01**: Connection error: Timed out while waiting for handshake
+- **5507TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5509PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5509TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5511prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5511tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5511TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5512prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5512PRD-BAL-LNX01**: No DNS found in config
+- **5517PRD-BAL-LNX01**: No DNS found in config
+- **5515PRD-BAL-LNX01**: No DNS found in config
+- **5512TST1-BAL-LNX01**: No DNS found in config
+- **5515TST1-BAL-LNX01**: No DNS found in config
+- **5512tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5513PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5513TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5515prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5517prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5519PRD-BAL-LNX01**: No DNS found in config
+- **5518PRD-BAL-LNX01**: No DNS found in config
+- **5521PRD-BAL-LNX01**: No DNS found in config
+- **5517tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5517TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5518prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5518TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5519prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5519TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5521prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5527PRD-BAL-LNX01**: No DNS found in config
+- **5524PRD-BAL-LNX01**: No DNS found in config
+- **5525PRD-BAL-LNX01**: No DNS found in config
+- **5524TST1-BAL-LNX01**: No DNS found in config
+- **5521TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5524prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5525prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5525TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5527TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5534prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5538TST1-BAL-LNX01**: No DNS found in config
+- **5538PRD-BAL-LNX01**: No DNS found in config
+- **5534PRD-BAL-LNX01**: No DNS found in config
+- **5534TST1-BAL-LNX-01**: No DNS found in config
+- **5534tst1-bal-lnx-01**: Connection error: Timed out while waiting for handshake
+- **5535PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5535TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5538prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5538tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5542prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5545PRD-BAL-LNX01**: No DNS found in config
+- **5542PRD-BAL-LNX01**: No DNS found in config
+- **5546PRD-BAL-LNX01**: No DNS found in config
+- **5546TST1-BAL-LNX01**: No DNS found in config
+- **5542TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5545prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5545TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5546prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5546tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5550prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5605PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **5605PRD-BAL-PLANO-LNX01**: No DNS found in config
+- **5605PRD-BAL-LNX01**: No DNS found in config
+- **5605PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **5550TST1-BAL-LNX01**: No DNS found in config
+- **5605PRD-BAL-PEP-LNX01**: No DNS found in config
+- **5550PRD-BAL-LNX01**: No DNS found in config
+- **5550tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5552PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5552TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5605TST1-BAL-LNX01**: No DNS found in config
+- **5605PRD-BAL-SOUL-LNX01**: No DNS found in config
+- **5792PRD2-BAL-APOIO-LNX01**: No DNS found in config
+- **5792PRD2-BAL-ERP-LNX01**: No DNS found in config
+- **5792PRD-BAL-LNX01**: No DNS found in config
+- **5792prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **5792prd2-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792prd2-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792PRD2-BAL-HOSP-LNX01**: No DNS found in config
+- **5792PRD2-BAL-REPORT-LNX01**: No DNS found in config
+- **5792PRD2-BAL-PEP-LNX01**: No DNS found in config
+- **5792TST1-BAL-LNX01**: No DNS found in config
+- **5811PRD-BAL-LNX01**: No DNS found in config
+- **5792prd2-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792prd2-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792prd2-bal-report-lnx01**: Connection error: Timed out while waiting for handshake
+- **5792tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **5811prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6021PRD-BAL-LNX01**: No DNS found in config
+- **6019PRD-BAL-LNX01**: No DNS found in config
+- **6009TST1-BAL-LNX01**: No DNS found in config
+- **6009PRD-BAL-LNX01**: No DNS found in config
+- **6019TST1-BAL-LNX01**: No DNS found in config
+- **5811TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5841PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **5841TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6021prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6021TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6107PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **6107PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **6107PRD-BAL-LNX01**: No DNS found in config
+- **6107PRD-BAL-ERP-LNX01**: No DNS found in config
+- **6057PRD-BAL-LNX01**: No DNS found in config
+- **6107PRD-BAL-PEP-LNX01**: No DNS found in config
+- **6057prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6057tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6057TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6107prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **6107TST1-BAL-LNX01**: No DNS found in config
+- **6118PRD-BAL-LNX01**: No DNS found in config
+- **6107prd2-bal-apoio-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107prd2-bal-erp-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107prd2-bal-hosp-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107prd2-bal-pep-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107prd2-bal-report-lnx01**: Connection error: Timed out while waiting for handshake
+- **6107tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6118prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6118TST1-BAL-LNX01**: No DNS found in config
+- **6167TST1-BAL-LNX01**: No DNS found in config
+- **6168PRD-BAL-LNX01**: No DNS found in config
+- **6168TST1-BAL-LNX01**: No DNS found in config
+- **6167PRD-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **6118tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6167prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6168prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6168tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6249prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6263TST1-BAL-LNX01**: No DNS found in config
+- **6249PRD-BAL-LNX01**: No DNS found in config
+- **6263PRD-BAL-LNX01**: No DNS found in config
+- **6249tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6249TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6263prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6263prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **6263PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6263tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6263tst1-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **6333TST1-BAL-LNX01**: No DNS found in config
+- **6333PRD-BAL-LNX01**: No DNS found in config
+- **6267PRD-BAL-LNX01**: No DNS found in config
+- **6263TST1-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6267prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6267TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6322PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6322TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6333prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6333tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6466PRD-BAL-LNX01**: No DNS found in config
+- **6446TST1-BAL-LNX01**: No DNS found in config
+- **6450PRD-BAL-LNX01**: No DNS found in config
+- **6446PRD-BAL-LNX01**: No DNS found in config
+- **6335TST1-BAL-LNX01**: No DNS found in config
+- **6335PRD-BAL-LNX01**: No DNS found in config
+- **6446prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6446tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6450prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **6450TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6595PRD-BAL-PLANO-LNX01**: File probably not found or access denied, code: 1
+- **6595PRD-BAL-PEP-LNX01**: No DNS found in config
+- **6595PRD-BAL-LNX01**: No DNS found in config
+- **6595PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **6595PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **6559TST1-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **6559PRD-BAL-LNX01**: Connection error: All configured authentication methods failed
+- **6466TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6497PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6497TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6595TST1-BAL-LNX01**: No DNS found in config
+- **6595PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **6692PRD-BAL-LNX01**: No DNS found in config
+- **6640TST1-BAL-LNX01**: No DNS found in config
+- **6640PRD-BAL-LNX01**: No DNS found in config
+- **6698PRD-BAL-LNX01**: No DNS found in config
+- **6698PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **6698PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **6595PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6692TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6721PRD-BAL-LNX01**: No DNS found in config
+- **6792PRD-BAL-LNX01**: No DNS found in config
+- **6791PRD-BAL-LNX01**: No DNS found in config
+- **6721TST1-BAL-LNX01**: No DNS found in config
+- **6698TST1-BAL-LNX01**: No DNS found in config
+- **6698PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **6698PRD-BAL-PEP-LNX01**: No DNS found in config
+- **6698PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6721PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6791TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6792TST1-BAL-LNX01**: No DNS found in config
+- **6826TST1-BAL-LNX01**: No DNS found in config
+- **6826PRD-BAL-LNX01**: No DNS found in config
+- **6848PRD-BAL-LNX01**: No DNS found in config
+- **6851PRD-BAL-HOSP-LNX01**: No DNS found in config
+- **6851PRD-BAL-LNX01**: No DNS found in config
+- **6851PRD-BAL-PEP-LNX01**: No DNS found in config
+- **6851PRD-BAL-APOIO-LNX01**: No DNS found in config
+- **6851PRD-BAL-ERP-LNX01**: No DNS found in config
+- **6848TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6852PRD-BAL-LNX01**: No DNS found in config
+- **6852TST1-BAL-LNX01**: No DNS found in config
+- **6853PRD-BAL-LNX01**: No DNS found in config
+- **7073PRD-BAL-LNX01**: No DNS found in config
+- **6851TST1-BAL-LNX01**: No DNS found in config
+- **6851PRD-BAL-REPORT-LNX01**: No DNS found in config
+- **6851PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **6853TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6884PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **6884TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7150TST1-BAL-LNX01**: No DNS found in config
+- **7111TST1-BAL-LNX01**: No DNS found in config
+- **7151PRD-BAL-LNX01**: No DNS found in config
+- **7141PRD-BAL-LNX01**: No DNS found in config
+- **7150PRD-BAL-LNX01**: No DNS found in config
+- **7111PRD-BAL-LNX01**: No DNS found in config
+- **7073PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **7073TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7141TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7151PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **7238PRD-BAL-LNX01**: No DNS found in config
+- **7238TST1-BAL-LNX01**: No DNS found in config
+- **7571TST1-BAL-LNX01**: No DNS found in config
+- **7247PRD-BAL-LNX01**: No DNS found in config
+- **7571PRD-BAL-LNX01**: No DNS found in config
+- **7577PRD-BAL-LNX01**: No DNS found in config
+- **7151TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7238PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **7247TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7571PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **7696PRD-BAL-LNX01**: No DNS found in config
+- **7804PRD-BAL-LNX01**: No DNS found in config
+- **7802PRD-BAL-LNX01**: No DNS found in config
+- **7577TST1-BAL-LNX01**: No DNS found in config
+- **7696TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7794PRD-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7794PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **7794TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7802TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **7804TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **8030PRD-BAL-LNX01**: No DNS found in config
+- **8013TST1-BAL-LNX01**: No DNS found in config
+- **8013PRD-BAL-LNX01**: No DNS found in config
+- **8049TST1-BAL-LNX01**: No DNS found in config
+- **8055PRD-BAL-LNX01**: No DNS found in config
+- **8049PRD-BAL-LNX01**: No DNS found in config
+- **8013PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **8030TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **8055PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **8055TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9033PRD-BAL-LNX01**: No DNS found in config
+- **8473PRD-BAL-LNX01**: No DNS found in config
+- **8071PRD-BAL-LNX01**: No DNS found in config
+- **8473TST1-BAL-LNX01**: No DNS found in config
+- **8071TST1-BAL-LNX01**: No DNS found in config
+- **8963PRD-BAL-LNX01**: No DNS found in config
+- **8963TST1-BAL-LNX01**: No DNS found in config
+- **8450PRD-BAL-LNX01**: No DNS found in config
+- **8450TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9033prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **9035PRD-BAL-LNX01**: No DNS found in config
+- **9033prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **9033PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **9033tst1-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **9033TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9035prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **9035prd-globalh-lnx01**: Connection error: Timed out while waiting for handshake
+- **9035PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **9035TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9036prd-bal-lnx01**: Connection error: Timed out while waiting for handshake
+- **9037PRD-BAL-LNX01**: No DNS found in config
+- **9036PRD-BAL-LNX01**: File probably not found or access denied, code: 1
+- **9044PRD-BAL-LNX01**: No DNS found in config
+- **9045TST1-BAL-LNX01**: No DNS found in config
+- **9045PRD-BAL-LNX01**: No DNS found in config
+- **9159PRD-BAL-LNX01**: No DNS found in config
+- **9037TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9044TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **9159PRD-GLOBALH-LNX01**: Connection error: Timed out while waiting for handshake
+- **9159TST1-BAL-LNX01**: Connection error: Timed out while waiting for handshake
+- **992170PRD-BAL-LNX01**: No DNS found in config
+- **992170TST1-BAL-LNX01**: No DNS found in config

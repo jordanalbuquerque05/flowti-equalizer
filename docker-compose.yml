@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: equalizador-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist inventory JSON so updates inside the container survive restarts
+      - ./inventario_geral_maquinas.json:/app/inventario_geral_maquinas.json
+    environment:
+      - NODE_ENV=production
+    # Optional: allow the container to reach hosts on host network (useful for SSH to machines)
+    # network_mode: host
