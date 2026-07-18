@@ -13,19 +13,21 @@ const wss = new WebSocket.Server({ server });
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PORT = 3000;
 
+require('dotenv').config();
+
 const DB_CONFIG = {
-  host: '137.131.181.89',
-  port: 33060,
-  database: 'oci_inventory',
-  user: 'user_read_portal',
-  password: 'FlowtiOci2025*',
+  host: process.env.DB_HOST || '137.131.181.89',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 33060,
+  database: process.env.DB_NAME || 'oci_inventory',
+  user: process.env.DB_USER || 'user_read_portal',
+  password: process.env.DB_PASSWORD,
   connectTimeout: 10000,
 };
 
-const SSH_USER = 'mv-portal';
+const SSH_USER = process.env.SSH_USER || 'mv-portal';
 const SSH_PASSWORDS = {
-  MVCLIENTESAAS: 'MvMv@@2019-9102',
-  CLOUDMVORACLE: 'MvMv@@20192019',
+  MVCLIENTESAAS: process.env.SSH_PASS_MVCLIENTESAAS,
+  CLOUDMVORACLE: process.env.SSH_PASS_CLOUDMVORACLE,
 };
 
 // ─── Load JSON inventory ──────────────────────────────────────────────────────
