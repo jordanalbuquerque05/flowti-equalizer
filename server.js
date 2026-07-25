@@ -22,6 +22,8 @@ const DB_CONFIG = {
   user: process.env.DB_USER || 'user_read_portal',
   password: process.env.DB_PASSWORD,
   connectTimeout: 10000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
 };
 
 const SSH_USER = process.env.SSH_USER || 'mv-portal';
@@ -178,6 +180,7 @@ async function getBALsFromDB(codigo) {
     }));
   } catch (e) {
     console.warn('DB query error:', e.message);
+    if (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET') dbPool = null;
     return [];
   }
 }
@@ -266,41 +269,78 @@ echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_por
 `;
     }
 
-    // Comando para reiniciar o tomcat
-    const cmd = `sudo su << 'EOF'
+    // Comando para reiniciar o tomcat: kill -9 → status check → cleanup → start
+    const cmd = `sudo su << 'ENDSSH'
 ${findTomcatLogic}
-echo ">> [1/3] Executando: tomcatctl stop $tomcat_port"
-bash -x $(which tomcatctl) stop "$tomcat_port" 2>&1
-  if [ $? -ne 0 ]; then
-    echo "❌ STOP falhou para o Tomcat $tomcat_port — abortando sequência."
-    exit 1
-  fi
-  echo "✅ STOP concluído."
 
-  echo ">> [2/3] Executando: tomcatctl cleanup $tomcat_port"
-  bash -x $(which tomcatctl) cleanup "$tomcat_port" 2>&1
-  if [ $? -ne 0 ]; then
-    echo "❌ CLEANUP falhou para o Tomcat $tomcat_port — abortando sequência."
-    exit 1
-  fi
-  echo "✅ CLEANUP concluído."
+if [ -z "$tomcat_port" ]; then
+  echo "❌ Não foi possível determinar a porta do Tomcat para o produto ${produto}."
+  exit 1
+fi
 
-  echo ">> [3/3] Executando: tomcatctl start $tomcat_port"
-  bash -x $(which tomcatctl) start "$tomcat_port" 2>&1
-  if [ $? -ne 0 ]; then
-    echo "❌ START falhou para o Tomcat $tomcat_port"
+echo ""
+echo "=== [1/5] Buscando processo do Tomcat na porta $tomcat_port ==="
+PS_OUTPUT=$(ps aux | grep "[j]ava" | grep "$tomcat_port")
+echo "$PS_OUTPUT"
+
+TOM_PID=$(echo "$PS_OUTPUT" | awk '{print $2}' | head -1)
+
+if [ -z "$TOM_PID" ]; then
+  echo "⚠️  Nenhum processo Java encontrado na porta $tomcat_port. Verificando status..."
+else
+  echo ""
+  echo "=== [2/5] Matando processo PID $TOM_PID (kill -9) ==="
+  kill -9 "$TOM_PID"
+  sleep 2
+  if kill -0 "$TOM_PID" 2>/dev/null; then
+    echo "❌ Processo $TOM_PID ainda está vivo após kill -9. Abortando."
     exit 1
   fi
-  echo "✅ START concluído."
-  echo "=== Tomcat $tomcat_port reiniciado com sucesso na máquina ${machine.hostname} ==="
-EOF
+  echo "✅ Processo $TOM_PID finalizado com sucesso."
+fi
+
+echo ""
+echo "=== [3/5] Verificando status via tomcatctl ==="
+STATUS_OUTPUT=$(tomcatctl status "$tomcat_port" 2>&1)
+echo "$STATUS_OUTPUT"
+
+if echo "$STATUS_OUTPUT" | grep -qi "STRT\|running\|ativo"; then
+  echo "❌ Tomcat $tomcat_port ainda aparece RODANDO após kill -9. Abortando."
+  exit 1
+fi
+echo "✅ Tomcat $tomcat_port está PARADO. Prosseguindo com cleanup..."
+
+echo ""
+echo "=== [4/5] Executando: tomcatctl cleanup $tomcat_port ==="
+tomcatctl cleanup "$tomcat_port" 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ CLEANUP falhou para o Tomcat $tomcat_port — abortando."
+  exit 1
+fi
+echo "✅ CLEANUP concluído."
+
+echo ""
+echo "=== [5/5] Executando: tomcatctl start $tomcat_port ==="
+tomcatctl start "$tomcat_port" 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ START falhou para o Tomcat $tomcat_port."
+  exit 1
+fi
+echo "✅ Tomcat $tomcat_port iniciado com sucesso na máquina ${machine.hostname}."
+echo ""
+echo "=== Restart concluído: ${machine.hostname} / porta $tomcat_port ==="
+ENDSSH
     `;
+
+
+
+
 
     try {
       await new Promise((resolve, reject) => {
         let settled = false;
-        const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout general')); } }, 60000);
-        
+        const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout general')); } }, 120000);
+
         const jumpClient = new Client();
         jumpClient.on('ready', () => {
           jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
@@ -516,6 +556,7 @@ app.get('/api/machines', async (req, res) => {
     }
   } catch (e) {
     console.warn('Failed to get public_ips:', e.message);
+    if (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET') dbPool = null;
   }
 
   res.json({
@@ -958,9 +999,17 @@ echo "----------------------------------------"
 echo "Processando produto: ${upd.produto} -> Alvo: ${upd.novaVersao}"
 for xml in /MV/servers/*/*/conf/Catalina/localhost/${upd.produto}.xml; do
   if [ -f "$xml" ]; then
-    # Verificar se a pasta da release realmente existe
-    if [ ! -d "/MV/app/soul/products/${upd.produto}/${upd.novaVersao}" ]; then
-      echo "❌ A release ${upd.novaVersao} NÃO EXISTE no servidor para o produto ${upd.produto}. Ignorando!"
+    # Derivar o ambiente pelo caminho do xml (soulmv_prd ou soulmv_trn)
+    server_dir=$(echo "$xml" | awk -F'/' '{print $4}')
+    if echo "$server_dir" | grep -qi "prd"; then
+      APP_BASE="/MV/apps/soulmv_prd/products"
+    else
+      APP_BASE="/MV/apps/soulmv_trn/products"
+    fi
+
+    # Verificar se a pasta da release realmente existe no caminho correto
+    if [ ! -d "$APP_BASE/${upd.produto}/${upd.novaVersao}" ]; then
+      echo "❌ A release ${upd.novaVersao} NÃO EXISTE em $APP_BASE/${upd.produto}/ para o produto ${upd.produto}. Ignorando!"
       continue
     fi
 
