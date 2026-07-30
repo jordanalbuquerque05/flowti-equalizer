@@ -1683,12 +1683,10 @@ function renderClients(clients) {
     return;
   }
   for (const c of clients) {
-    const initials = c.codigo.slice(-2).toUpperCase();
     const item = document.createElement('div');
     item.className = 'client-item' + (c.codigo === state.currentCodigo ? ' active' : '');
     item.dataset.codigo = c.codigo;
     item.innerHTML = `
-      <div class="client-avatar">${initials}</div>
       <div class="client-info">
         <div class="client-code">${c.codigo}</div>
         <div class="client-meta">${c.tenancy || 'Tenancy não definida'}</div>
@@ -2593,6 +2591,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
               </select>
             </div>
             <div style="margin-top:6px; display:flex; gap:4px; justify-content:flex-end;">
+              <button id="sync-${safeId}" onclick="triggerSyncRelease('${produto}')" style="padding:3px 8px; font-size:10px; cursor:pointer; background:rgba(34,211,160,0.15); color:var(--success); border:1px solid rgba(34,211,160,0.4); border-radius:3px;" onmouseover="this.style.background='rgba(34,211,160,0.35)'" onmouseout="this.style.background='rgba(34,211,160,0.15)'">📥 Copiar do PRD</button>
               <button id="rollback-${safeId}" onclick="triggerRollback('${produto}')" style="display:none; padding:3px 6px; font-size:10px; cursor:pointer; background:rgba(255,85,85,0.15); color:#ff5555; border:1px solid rgba(255,85,85,0.4); border-radius:3px;">⏪ Rollback</button>
               <button id="restart-${safeId}" onclick="triggerTomcatRestart('${produto}')" style="padding:3px 8px; font-size:10px; cursor:pointer; background:rgba(245,158,11,0.15); color:var(--warning); border:1px solid rgba(245,158,11,0.4); border-radius:3px;" onmouseover="this.style.background='rgba(245,158,11,0.35)'" onmouseout="this.style.background='rgba(245,158,11,0.15)'">🔄 Restart Tomcat</button>
             </div>
@@ -2816,6 +2815,117 @@ async function batchUpdateVersions(targetEnv) {
     showNotif(`Erro na requisição: ${e.message}`, 'err');
   } finally {
     if (btnTst) btnTst.disabled = false;
+  }
+}
+
+async function triggerSyncRelease(produto) {
+  const selected = soulData.soulMachines.filter((_, i) => {
+    const cb = document.getElementById(`soul-cb-${i}`);
+    return cb && cb.checked;
+  });
+
+  if (!selected.length) {
+    showNotif("Selecione as máquinas (pelo menos 1 de PRD e 1 de TST) para sincronizar.", "warn");
+    return;
+  }
+
+  const prdMachine = selected.find(m => (m.ambiente||'').toUpperCase().includes('PRD'));
+  const tstMachine = selected.find(m => !(m.ambiente||'').toUpperCase().includes('PRD'));
+
+  if (!prdMachine || !tstMachine) {
+    showNotif("É necessário ter pelo menos uma máquina PRD e uma máquina TST selecionadas.", "err");
+    return;
+  }
+
+  let prdInstalledVer = null;
+  let prdTomcat = null;
+  if (window.lastVersionMap && window.lastVersionMap[prdMachine.hostname] && window.lastVersionMap[prdMachine.hostname].produtos && window.lastVersionMap[prdMachine.hostname].produtos[produto]) {
+    prdInstalledVer = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].versao;
+    prdTomcat = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].tomcat;
+  }
+
+  if (!prdInstalledVer) {
+    showNotif("Não foi possível identificar a versão instalada em PRD para este produto. Atualize os dados primeiro.", "err");
+    return;
+  }
+
+  let tstInstalledVer = null;
+  let tstTomcat = null;
+  if (window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos && window.lastVersionMap[tstMachine.hostname].produtos[produto]) {
+    tstInstalledVer = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].versao;
+    tstTomcat = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].tomcat;
+  }
+
+  if (!tstTomcat) {
+    if (window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos) {
+       const prods = window.lastVersionMap[tstMachine.hostname].produtos;
+       for (const p in prods) {
+         if (prods[p] && prods[p].length > 0 && prods[p][0].tomcat) { tstTomcat = prods[p][0].tomcat; break; }
+       }
+    }
+    if (!tstTomcat) tstTomcat = prdTomcat;
+  }
+
+  const confirmed = await showConfirmModal(
+    `Atenção: Copiar Release de PRD`,
+    `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir a pasta da release para a máquina de TST.`
+  );
+  if (!confirmed) return;
+
+  const consoleDiv = document.getElementById('updateConsole');
+  consoleDiv.style.display = 'block';
+  const div = document.createElement('div');
+  div.style.color = '#22d3a0';
+  div.textContent = `[SYNC REQUESTED] Produto: ${produto} | Release: ${prdInstalledVer}`;
+  consoleDiv.appendChild(div);
+  consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+  const balRef = soulData.bals[0];
+
+  try {
+    const response = await fetch('/api/sync-release', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        produto, 
+        release: prdInstalledVer,
+        prdMachine: { hostname: prdMachine.hostname, ip: prdMachine.ip, tenancy: prdMachine.tenancy, ambiente: prdMachine.ambiente },
+        tstMachine: { hostname: tstMachine.hostname, ip: tstMachine.ip, tenancy: tstMachine.tenancy, ambiente: tstMachine.ambiente },
+        prdTomcat,
+        tstTomcat,
+        tstInstalledVer,
+        balHost: balRef.public_ip,
+        balTenancy: balRef.tenancy
+      })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let done = false;
+
+    while (!done) {
+      const { value, done: readerDone } = await reader.read();
+      if (value) {
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\\n');
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const lineDiv = document.createElement('div');
+          if (line.includes('❌') || line.includes('ERRO')) lineDiv.style.color = '#ff5555';
+          else if (line.includes('✅') || line.includes('sucesso') || line.includes('CONCLUÍDO')) lineDiv.style.color = '#55ff55';
+          else lineDiv.style.color = '#cccccc';
+          lineDiv.textContent = line;
+          consoleDiv.appendChild(lineDiv);
+        }
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+      }
+      done = readerDone;
+    }
+  } catch (err) {
+    const errDiv = document.createElement('div');
+    errDiv.style.color = '#ff5555';
+    errDiv.textContent = `Erro crítico na sincronização: ${err.message}`;
+    consoleDiv.appendChild(errDiv);
   }
 }
 
