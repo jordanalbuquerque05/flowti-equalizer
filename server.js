@@ -11,7 +11,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const PORT = 3000;
+const PORT = 3333;
 
 require('dotenv').config();
 
@@ -270,7 +270,7 @@ echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_por
     }
 
     // Comando para reiniciar o tomcat: kill -9 → status check → cleanup → start
-    const cmd = `sudo su << 'ENDSSH'
+    const cmd = `sudo su - << 'ENDSSH'
 ${findTomcatLogic}
 
 if [ -z "$tomcat_port" ]; then
@@ -291,7 +291,8 @@ else
   echo ""
   echo "=== [2/5] Matando processo PID $TOM_PID (kill -9) ==="
   kill -9 "$TOM_PID"
-  sleep 2
+  echo "Aguardando 5 segundos para o SO liberar as portas e arquivos..."
+  sleep 5
   if kill -0 "$TOM_PID" 2>/dev/null; then
     echo "❌ Processo $TOM_PID ainda está vivo após kill -9. Abortando."
     exit 1
@@ -304,7 +305,7 @@ echo "=== [3/5] Verificando status via tomcatctl ==="
 STATUS_OUTPUT=$(tomcatctl status "$tomcat_port" 2>&1)
 echo "$STATUS_OUTPUT"
 
-if echo "$STATUS_OUTPUT" | grep -qi "STRT\|running\|ativo"; then
+if echo "$STATUS_OUTPUT" | grep -qiE "STRT|running|ativo"; then
   echo "❌ Tomcat $tomcat_port ainda aparece RODANDO após kill -9. Abortando."
   exit 1
 fi
@@ -317,6 +318,8 @@ if [ $? -ne 0 ]; then
   echo "❌ CLEANUP falhou para o Tomcat $tomcat_port — abortando."
   exit 1
 fi
+echo "Aguardando 3 segundos após o cleanup..."
+sleep 3
 echo "✅ CLEANUP concluído."
 
 echo ""
@@ -326,6 +329,8 @@ if [ $? -ne 0 ]; then
   echo "❌ START falhou para o Tomcat $tomcat_port."
   exit 1
 fi
+echo "Aguardando 5 segundos para a JVM inicializar..."
+sleep 5
 echo "✅ Tomcat $tomcat_port iniciado com sucesso na máquina ${machine.hostname}."
 echo ""
 echo "=== Restart concluído: ${machine.hostname} / porta $tomcat_port ==="
@@ -505,6 +510,226 @@ EOF
 
   res.write(`\n✅ Processo de rollback concluído!\n`);
   res.end();
+});
+
+// Endpoint para sincronização de Release (PRD -> TST)
+app.post('/api/sync-release', async (req, res) => {
+  const { produto, release, prdMachine, tstMachine, prdTomcat, tstTomcat, tstInstalledVer, balHost, balTenancy } = req.body;
+
+  if (!produto || !release || !prdMachine || !tstMachine || !prdTomcat || !tstTomcat) {
+    return res.status(400).json({ error: 'Faltam parâmetros obrigatórios' });
+  }
+
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Transfer-Encoding', 'chunked');
+
+  const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
+  const prdPassword = SSH_PASSWORDS[prdMachine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+  const tstPassword = SSH_PASSWORDS[tstMachine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+
+  res.write(`\n======================================================\n`);
+  res.write(`🚀 INICIANDO SINCRONIZAÇÃO DE RELEASE\n`);
+  res.write(`📦 Produto: ${produto}\n`);
+  res.write(`🏷️ Release: ${release}\n`);
+  res.write(`🏢 Origem: ${prdMachine.hostname} (${prdTomcat})\n`);
+  res.write(`🏗️ Destino: ${tstMachine.hostname} (${tstTomcat})\n`);
+  res.write(`======================================================\n\n`);
+
+  let prdJumpClient, prdSoulClient;
+  let tstJumpClient, tstSoulClient;
+
+  // Helper para conectar
+  const connectMachine = async (machine, password) => {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => { if(!settled){ settled=true; reject(new Error('Timeout connecting to '+machine.hostname)); } }, 20000);
+      
+      const jumpClient = new Client();
+      jumpClient.on('ready', () => {
+        jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
+          if (err) { clearTimeout(timer); jumpClient.end(); if(!settled){ settled=true; reject(err); } return; }
+          const soulClient = new Client();
+          soulClient.on('ready', () => {
+            clearTimeout(timer);
+            if(!settled){ settled=true; resolve({ jumpClient, soulClient }); }
+          });
+          soulClient.on('error', err3 => {
+            clearTimeout(timer); jumpClient.end();
+            if(!settled){ settled=true; reject(err3); }
+          });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: password, readyTimeout: 15000 });
+        });
+      });
+      jumpClient.on('error', err => {
+        clearTimeout(timer);
+        if(!settled){ settled=true; reject(err); }
+      });
+      jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 12000 });
+    });
+  };
+
+  try {
+    res.write(`>> [1/4] Conectando nos servidores PRD e TST simultaneamente...\n`);
+    const [prdConn, tstConn] = await Promise.all([
+      connectMachine(prdMachine, prdPassword),
+      connectMachine(tstMachine, tstPassword)
+    ]);
+    
+    prdJumpClient = prdConn.jumpClient; prdSoulClient = prdConn.soulClient;
+    tstJumpClient = tstConn.jumpClient; tstSoulClient = tstConn.soulClient;
+    res.write(`✅ Conexões estabelecidas com sucesso!\n\n`);
+
+    // Função auxiliar super robusta para executar comandos e printar TUDO
+    const execCmd = (client, cmd, stepName, timeoutMs = 15000) => {
+      return new Promise((resolve, reject) => {
+        client.exec(cmd, (err, stream) => {
+          if (err) return reject(err);
+          let out = '', errOut = '', finished = false;
+          
+          const timer = setTimeout(() => {
+            if (!finished) reject(new Error(`Timeout (${timeoutMs}ms) na etapa: ${stepName}`));
+          }, timeoutMs);
+
+          stream.on('data', d => {
+            out += d.toString();
+            const lines = d.toString().split('\n');
+            for(let l of lines) if(l.trim()) res.write(`   [${stepName}] ${l.trim()}\n`);
+          });
+          
+          stream.stderr.on('data', d => {
+            errOut += d.toString();
+            const lines = d.toString().split('\n');
+            for(let l of lines) if(l.trim()) res.write(`   [${stepName} - ERRO] ${l.trim()}\n`);
+          });
+
+          stream.on('close', (code) => {
+            finished = true;
+            clearTimeout(timer);
+            resolve({ code, stdout: out.trim(), stderr: errOut.trim() });
+          });
+          
+          stream.on('error', e => {
+             finished = true;
+             clearTimeout(timer);
+             reject(e);
+          });
+        });
+      });
+    };
+
+    // PASSO 1: Pegar CATALINA_HOME de PRD
+    res.write(`>> [2/4] Coletando versão do Tomcat em PRD (/etc/init.d/${prdTomcat})...\n`);
+    const cmd1 = `sudo su -c "cat /etc/init.d/${prdTomcat} | grep -E '^export CATALINA_HOME=' | awk -F'=' '{print \\$2}' | tr -d '\\"'"`;
+    const res1 = await execCmd(prdSoulClient, cmd1, 'PRD-CATALINA');
+    let prdCatalinaHome = res1.stdout;
+
+    if (!prdCatalinaHome) {
+      throw new Error(`Não foi possível encontrar CATALINA_HOME no PRD (${prdTomcat})`);
+    }
+    res.write(`✅ CATALINA_HOME no PRD: ${prdCatalinaHome}\n\n`);
+
+    // PASSO 2: Aplicar CATALINA_HOME em TST
+    res.write(`>> [3/5] Atualizando script do Tomcat em TST (/etc/init.d/${tstTomcat})...\n`);
+    const sedCmd = `sudo su -c "sed -i 's|^export CATALINA_HOME=.*|export CATALINA_HOME=\\"${prdCatalinaHome}\\"|g' /etc/init.d/${tstTomcat}"`;
+    const res2 = await execCmd(tstSoulClient, sedCmd, 'TST-SED-CATALINA');
+    if (res2.code !== 0) throw new Error(res2.stderr || 'Erro ao atualizar CATALINA no TST');
+    res.write(`✅ CATALINA_HOME do TST equalizado com sucesso!\n\n`);
+
+    // PASSO 3: Copiar tomcat-version.txt
+    res.write(`>> [4/5] Copiando arquivo tomcat-version.txt do PRD...\n`);
+    const cmd3 = `sudo su -c "cat /MV/servers/*/${prdTomcat}/conf/tomcat-version.txt 2>/dev/null || true"`;
+    const res3 = await execCmd(prdSoulClient, cmd3, 'PRD-READ-VERSION');
+    let prdTomcatVersionTxt = res3.stdout;
+
+    if (prdTomcatVersionTxt) {
+      const b64 = Buffer.from(prdTomcatVersionTxt).toString('base64');
+      const setVerCmd = `sudo su -c "sh -c 'for d in /MV/servers/*/${tstTomcat}/conf; do if [ -d \\"\\$d\\" ]; then echo \\"${b64}\\" | base64 -d > \\"\\$d/tomcat-version.txt\\"; fi; done'"`;
+      const res4 = await execCmd(tstSoulClient, setVerCmd, 'TST-WRITE-VERSION');
+      if (res4.code !== 0) throw new Error(res4.stderr || 'Erro ao escrever tomcat-version.txt no TST');
+      res.write(`✅ tomcat-version.txt do TST atualizado com sucesso!\n\n`);
+    } else {
+      res.write(`⚠️ tomcat-version.txt não encontrado no PRD, ignorando este passo.\n\n`);
+    }
+
+    // PASSO 4: SCP (Tar Pipe)
+    res.write(`>> [5/5] Sincronizando pasta 'forms' de PRD para TST (Pipe Direto)...\n`);
+    console.log(`[SYNC] 5/5 - Sincronizando arquivos (tar pipe). Acompanhando logs de transferência...`);
+    const prdPath = `/MV/apps/soulmv_prd/products/${produto}/${release}`;
+    const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+    
+    await execCmd(tstSoulClient, `sudo su -c "mkdir -p ${tstPath}"`, 'TST-MKDIR');
+
+    res.write(`   - Compactando ${prdPath}/forms\n`);
+    res.write(`   - Extraindo em ${tstPath}\n`);
+
+    await new Promise((resolve, reject) => {
+      prdSoulClient.exec(`sudo su -c "tar -czf - -C ${prdPath} forms"`, (err, prdStream) => {
+        if (err) return reject(err);
+        
+        prdStream.stderr.on('data', d => {
+          const str = d.toString();
+          const lines = str.split('\n');
+          for(let l of lines) if (l.trim()) res.write(`   [PRD-TAR-ERRO] ${l.trim()}\n`);
+        });
+
+        tstSoulClient.exec(`sudo su -c "tar -xzvf - -C ${tstPath}"`, (err2, tstStream) => {
+          if (err2) return reject(err2);
+          
+          let tstErr = '';
+          tstStream.stderr.on('data', d => {
+            const str = d.toString();
+            tstErr += str;
+            const lines = str.split('\n');
+            for(let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
+          });
+          
+          tstStream.on('data', d => {
+            const lines = d.toString().split('\n');
+            for(let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
+          });
+          
+          prdStream.pipe(tstStream);
+          
+          tstStream.on('close', (code) => {
+            if (code !== 0 && !tstErr.includes('forms/')) reject(new Error(tstErr || 'Erro no tar TST'));
+            else resolve();
+          });
+          
+          prdStream.on('error', (e) => reject(e));
+          tstStream.on('error', (e) => reject(e));
+        });
+      });
+    });
+
+    res.write(`✅ Arquivos transferidos com sucesso!\n`);
+    
+    // NOVO PASSO: Copiar conf da release anterior para a nova
+    if (tstInstalledVer && tstInstalledVer !== release) {
+      res.write(`>> [6/7] Copiando pasta 'conf' da versão atual (${tstInstalledVer}) para a nova (${release}) no TST...\n`);
+      const oldConfPath = `/MV/apps/soulmv_trn/products/${produto}/${tstInstalledVer}/conf`;
+      const newReleasePath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+      const cpCmd = `sudo su -c "if [ -d \\"${oldConfPath}\\" ]; then cp -R \\"${oldConfPath}\\" \\"${newReleasePath}/\\"; fi"`;
+      await execCmd(tstSoulClient, cpCmd, 'TST-CP-CONF');
+      res.write(`✅ Pasta 'conf' copiada!\n\n`);
+    } else {
+      res.write(`>> [6/7] Copiando pasta 'conf' - Ignorado (versão atual é igual a nova ou não identificada).\n\n`);
+    }
+
+    res.write(`>> [7/7] Ajustando permissões (chown mv.mv) no TST...\n`);
+    await execCmd(tstSoulClient, `sudo su -c "chown -R mv.mv ${tstPath}"`, 'TST-CHOWN');
+    res.write(`✅ Permissões ajustadas!\n`);
+
+    res.write(`\n🎉 PROCESSO CONCLUÍDO COM SUCESSO!\n`);
+
+  } catch (err) {
+    res.write(`\n❌ ERRO CRÍTICO DURANTE A SINCRONIZAÇÃO:\n${err.message}\n`);
+  } finally {
+    if(prdSoulClient) prdSoulClient.end();
+    if(prdJumpClient) prdJumpClient.end();
+    if(tstSoulClient) tstSoulClient.end();
+    if(tstJumpClient) tstJumpClient.end();
+    res.end();
+  }
 });
 
 app.get('/api/inventory', (req, res) => {
@@ -1318,7 +1543,7 @@ wss.on('connection', (ws) => {
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n⚡ FlowtiEqualizerOps running at http://localhost:${PORT}`);
   console.log(`📂 Serving files from: ${__dirname}`);
   console.log(`📋 Inventory: ${inventory.length} unique machines loaded\n`);

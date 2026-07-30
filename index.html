@@ -1365,7 +1365,7 @@ function appendRestartLine(text) {
     line.style.color = '#6378ff';
     line.style.fontWeight = '600';
     line.style.marginTop = '6px';
-  } else if (t.includes('❌') || t.toUpperCase().includes('ERRO') || t.toUpperCase().includes('FAIL')) {
+  } else if (t.includes('❌') || (/\bERRO\b/i.test(t) || /\[.*ERRO\]/i.test(t)) || t.toUpperCase().includes('FAIL')) {
     line.style.color = '#ef4444';
   } else if (t.includes('✅') || t.toUpperCase().includes('SUCESSO') || t.toUpperCase().includes('SUCCE')) {
     line.style.color = '#22d3a0';
@@ -2587,7 +2587,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
         actionHtml = `
           <td style="text-align:right; white-space:nowrap; vertical-align:top;">
             <div style="display:flex; align-items:center; gap:4px; justify-content:flex-end;">
-              <button onclick="checkSingleProductVersion(this, '${produto}')" title="Verificar Versão Atual" style="padding:4px 8px; font-size:10px; cursor:pointer; background:rgba(99,102,241,0.15); color:var(--accent); border:1px solid rgba(99,102,241,0.4); border-radius:4px; white-space:nowrap;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'">🔍 Verificar Versão Atual</button>
+              <button onclick="checkSingleProductVersion(this, '${produto}')" title="Atualizar Dados" style="padding:4px 8px; font-size:10px; cursor:pointer; background:rgba(99,102,241,0.15); color:var(--accent); border:1px solid rgba(99,102,241,0.4); border-radius:4px; white-space:nowrap;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'">🔍 Atualizar Dados</button>
               <select class="batch-update-select" data-produto="${produto}" style="padding:4px; font-size:11px; border-radius:4px; border:1px solid var(--border-bright); background:#1e1e1e; color:#fff; max-width:160px;">
                 ${opts}
               </select>
@@ -2605,8 +2605,9 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
 
     const checkboxHtml = isReadOnly ? '' : `<input type="checkbox" class="update-product-cb" data-produto="${produto}">`;
     const divergenteMark = isDivergente ? ' style="border-left:3px solid #ef4444;"' : '';
+    const displayStyle = (_showingOnlyDivergentes && !isDivergente) ? ' style="display:none;"' : '';
 
-    return `<tr id="row-rel-${produto.replace(/[^a-zA-Z0-9]/g, '-')}" data-divergente="${isDivergente}"${divergenteMark}>
+    return `<tr id="row-rel-${produto.replace(/[^a-zA-Z0-9]/g, '-')}" data-divergente="${isDivergente}"${divergenteMark}${displayStyle}>
       <td style="font-weight:500;white-space:nowrap;vertical-align:top;">
         <label style="display:flex; align-items:center; gap:6px; cursor:${isReadOnly ? 'default' : 'pointer'};">
           ${checkboxHtml}
@@ -2630,7 +2631,11 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
   wrap.innerHTML = `
     <div class="releases-panel-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
       <div><span>📦</span> Releases Disponíveis <span style="font-size:10px;font-weight:400;color:var(--text-dim);">Verde = mais recente</span></div>
-      ${isReadOnly ? '' : `<button id="btn-toggle-divergentes" onclick="toggleDivergentes(this)" style="padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(99,102,241,0.12); color:var(--accent); border:1px solid rgba(99,102,241,0.4); border-radius:20px; transition:all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.3)'" onmouseout="this.style.background='rgba(99,102,241,0.12)'">🔎 Mostrar apenas divergentes</button>`}
+      ${isReadOnly ? '' : (
+        _showingOnlyDivergentes
+          ? `<button id="btn-toggle-divergentes" onclick="toggleDivergentes(this)" style="padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4); border-radius:20px; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">📋 Mostrar todos os produtos</button>`
+          : `<button id="btn-toggle-divergentes" onclick="toggleDivergentes(this)" style="padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(99,102,241,0.12); color:var(--accent); border:1px solid rgba(99,102,241,0.4); border-radius:20px; transition:all 0.2s;" onmouseover="this.style.background='rgba(99,102,241,0.3)'" onmouseout="this.style.background='rgba(99,102,241,0.12)'">🔎 Mostrar apenas divergentes</button>`
+      )}
     </div>
     <div class="version-table-wrap">
       <table class="version-table" id="releases-main-table">
@@ -2644,7 +2649,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
   `;
 }
 
-let _showingOnlyDivergentes = false;
+let _showingOnlyDivergentes = true;
 function toggleDivergentes(btn) {
   _showingOnlyDivergentes = !_showingOnlyDivergentes;
   const tbody = document.getElementById('releases-main-tbody');
@@ -2776,7 +2781,7 @@ async function batchUpdateVersions(targetEnv) {
         }
         
         const div = document.createElement('div');
-        if (line.includes('ERRO') || line.includes('TIMEOUT')) {
+        if ((/\bERRO\b/i.test(line) || /\[.*ERRO\]/i.test(line)) || line.includes('TIMEOUT')) {
           div.style.color = '#ff5555';
         } else if (line.includes('Atualizado') || line.includes('Backup salvo')) {
           div.style.color = '#55ff55';
@@ -2870,7 +2875,7 @@ async function triggerRollback(produto) {
         for (const line of lines) {
           if (!line.trim()) continue;
           const lineDiv = document.createElement('div');
-          if (line.includes('❌') || line.includes('ERRO')) lineDiv.style.color = '#ff5555';
+          if (line.includes('❌') || (/\bERRO\b/i.test(line) || /\[.*ERRO\]/i.test(line))) lineDiv.style.color = '#ff5555';
           else if (line.includes('✅') || line.includes('sucesso')) lineDiv.style.color = '#55ff55';
           else lineDiv.style.color = '#cccccc';
           lineDiv.textContent = line;
@@ -2944,7 +2949,7 @@ async function triggerTomcatRestart(produto) {
         buffer = lines.pop();
         for (const line of lines) {
           appendRestartLine(line);
-          if (line.includes('❌') || line.toUpperCase().includes('ERRO')) hasError = true;
+          if (line.includes('❌') || (/\bERRO\b/i.test(line) || /\[.*ERRO\]/i.test(line))) hasError = true;
         }
       }
       done = readerDone;
@@ -2952,7 +2957,7 @@ async function triggerTomcatRestart(produto) {
     // Flush remaining buffer
     if (buffer.trim()) {
       appendRestartLine(buffer);
-      if (buffer.includes('❌') || buffer.toUpperCase().includes('ERRO')) hasError = true;
+      if (buffer.includes('❌') || (/\bERRO\b/i.test(buffer) || /\[.*ERRO\]/i.test(buffer))) hasError = true;
     }
 
     finalizeRestartModal(!hasError);
