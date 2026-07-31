@@ -2112,7 +2112,7 @@ async function runFullCheck() {
            <div>⚠ <strong>Atenção:</strong> Foram encontradas divergências nos seguintes produtos:</div>
            <div style="font-size:12px; color:var(--text);">${mismatchedProducts.join(', ')}</div>
            <button class="btn-check-versions" style="margin-top:12px; padding: 10px 20px; font-size: 14px; font-weight: 600;" onclick="runReleasesCheck(this, false)">
-             <span>🔄</span> Sincronização
+             <span>🔍</span> Listar
            </button>
          </div>
        `;
@@ -2575,12 +2575,21 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
         }
         
         let dropdownVersions = [...tstVersions];
-        if (prdVersion && tstVersions.includes(prdVersion)) {
-           dropdownVersions = dropdownVersions.filter(v => v !== prdVersion);
-           dropdownVersions.unshift(prdVersion);
+        let hasPrdVer = false;
+        if (prdVersion) {
+           if (tstVersions.includes(prdVersion)) {
+             dropdownVersions = dropdownVersions.filter(v => v !== prdVersion);
+             dropdownVersions.unshift(prdVersion);
+             hasPrdVer = true;
+           }
         }
 
-        const opts = dropdownVersions.map(v => `<option value="${v}" style="background:#1e1e1e; color:#fff;">${v}</option>`).join('');
+        let opts = '';
+        if (prdVersion && !hasPrdVer) {
+           opts = `<option value="" disabled selected>⚠ Falta copiar de PRD</option>` + dropdownVersions.map(v => `<option value="${v}" style="background:#1e1e1e; color:#fff;">${v}</option>`).join('');
+        } else {
+           opts = dropdownVersions.map(v => `<option value="${v}" style="background:#1e1e1e; color:#fff;">${v}</option>`).join('');
+        }
         const safeId = produto.replace(/[^a-zA-Z0-9]/g, '-');
         actionHtml = `
           <td style="text-align:right; white-space:nowrap; vertical-align:top;">
@@ -2591,7 +2600,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
               </select>
             </div>
             <div style="margin-top:6px; display:flex; gap:4px; justify-content:flex-end;">
-              <button id="sync-${safeId}" onclick="triggerSyncRelease('${produto}')" style="padding:3px 8px; font-size:10px; cursor:pointer; background:rgba(34,211,160,0.15); color:var(--success); border:1px solid rgba(34,211,160,0.4); border-radius:3px;" onmouseover="this.style.background='rgba(34,211,160,0.35)'" onmouseout="this.style.background='rgba(34,211,160,0.15)'">📥 Copiar do PRD</button>
+              <button id="sync-${safeId}" onclick="triggerSyncRelease('${produto}')" style="padding:3px 8px; font-size:10px; cursor:pointer; background:rgba(34,211,160,0.15); color:var(--success); border:1px solid rgba(34,211,160,0.4); border-radius:3px;" onmouseover="this.style.background='rgba(34,211,160,0.35)'" onmouseout="this.style.background='rgba(34,211,160,0.15)'">📥 Copiar Release Atual do PRD</button>
               <button id="rollback-${safeId}" onclick="triggerRollback('${produto}')" style="display:none; padding:3px 6px; font-size:10px; cursor:pointer; background:rgba(255,85,85,0.15); color:#ff5555; border:1px solid rgba(255,85,85,0.4); border-radius:3px;">⏪ Rollback</button>
               <button id="restart-${safeId}" onclick="triggerTomcatRestart('${produto}')" style="padding:3px 8px; font-size:10px; cursor:pointer; background:rgba(245,158,11,0.15); color:var(--warning); border:1px solid rgba(245,158,11,0.4); border-radius:3px;" onmouseover="this.style.background='rgba(245,158,11,0.35)'" onmouseout="this.style.background='rgba(245,158,11,0.15)'">🔄 Restart Tomcat</button>
             </div>
@@ -2809,6 +2818,38 @@ async function batchUpdateVersions(targetEnv) {
     div.style.marginTop = '8px';
     div.textContent = `[${new Date().toLocaleTimeString()}] ✅ PROCESSO CONCLUÍDO!`;
     consoleDiv.appendChild(div);
+    
+    const restartPanel = document.createElement('div');
+    restartPanel.style.marginTop = '16px';
+    restartPanel.style.padding = '12px';
+    restartPanel.style.background = 'rgba(245,158,11,0.05)';
+    restartPanel.style.border = '1px solid rgba(245,158,11,0.2)';
+    restartPanel.style.borderRadius = '6px';
+    restartPanel.innerHTML = `<div style="color:var(--warning); font-size:12px; font-weight:bold; margin-bottom:8px;">🔄 Reiniciar Tomcats dos Produtos Atualizados</div>`;
+    
+    const restartGrid = document.createElement('div');
+    restartGrid.style.display = 'flex';
+    restartGrid.style.gap = '8px';
+    restartGrid.style.flexWrap = 'wrap';
+    
+    for (const upd of updates) {
+      const btn = document.createElement('button');
+      btn.textContent = `Restart ${upd.produto}`;
+      btn.style.padding = '4px 10px';
+      btn.style.fontSize = '11px';
+      btn.style.cursor = 'pointer';
+      btn.style.background = 'rgba(245,158,11,0.15)';
+      btn.style.color = 'var(--warning)';
+      btn.style.border = '1px solid rgba(245,158,11,0.4)';
+      btn.style.borderRadius = '4px';
+      btn.onmouseover = () => btn.style.background = 'rgba(245,158,11,0.35)';
+      btn.onmouseout = () => btn.style.background = 'rgba(245,158,11,0.15)';
+      btn.onclick = () => triggerTomcatRestart(upd.produto);
+      restartGrid.appendChild(btn);
+    }
+    
+    restartPanel.appendChild(restartGrid);
+    consoleDiv.appendChild(restartPanel);
     consoleDiv.scrollTop = consoleDiv.scrollHeight;
 
   } catch (e) {
@@ -3105,17 +3146,28 @@ async function checkSingleProductVersion(btn, produto) {
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
 
-    const res = await fetch('/api/check-versions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
+    const [resVersions, resReleases] = await Promise.all([
+      fetch('/api/check-versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }),
+      fetch('/api/check-releases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+    ]);
+
+    const dataVersions = await resVersions.json();
+    const dataReleases = await resReleases.json();
+
+    if (!dataVersions.success) throw new Error(dataVersions.error);
+    if (!dataReleases.success) throw new Error(dataReleases.error);
 
     // Update global map with new fetched versions
     if (!window.lastVersionMap) window.lastVersionMap = {};
-    for (const r of data.results) {
+    for (const r of dataVersions.results) {
       if (!window.lastVersionMap[r.hostname]) {
         window.lastVersionMap[r.hostname] = { success: r.success, produtos: {} };
       }
@@ -3128,30 +3180,35 @@ async function checkSingleProductVersion(btn, produto) {
       }
     }
 
-    // Now re-render ONLY the specific DOM elements
-    for (const r of data.results) {
-       const mHostname = r.hostname;
-       const currentObjArray = window.lastVersionMap[mHostname]?.produtos[produto] || [];
-       if (currentObjArray.length > 0) {
-          const newVersao = currentObjArray[0].versao;
-          const elId = `ver-atual-${produto.replace(/[^a-zA-Z0-9]/g, '-')}-${mHostname.replace(/[^a-zA-Z0-9]/g, '-')}`;
-          const el = document.getElementById(elId);
-          if (el) {
-             el.innerHTML = newVersao;
-             el.style.color = 'var(--success)';
-             el.style.transition = 'color 0.5s ease';
-             setTimeout(() => el.style.color = 'var(--accent)', 2000);
+    // Update global releases map
+    if (!window.lastReleasesResults) window.lastReleasesResults = [];
+    for (const r of dataReleases.results) {
+       const existing = window.lastReleasesResults.find(ex => ex.hostname === r.hostname);
+       if (existing) {
+          if (!existing.products) existing.products = {};
+          if (r.products && r.products[produto]) {
+             existing.products[produto] = r.products[produto];
           }
+       } else {
+          window.lastReleasesResults.push(r);
        }
     }
+
+    // Re-render the table
+    const wrap = document.getElementById('releasesTableWrap');
+    if (wrap) {
+      renderReleasesTable(wrap, window.lastReleasesResults, false);
+    }
     
-    showNotif(`Versão atualizada para ${produto}`, 'ok');
+    showNotif(`Dados atualizados para ${produto}`, 'ok');
 
   } catch (e) {
     showNotif('Erro: ' + e.message, 'err');
   } finally {
-    btn.innerHTML = oldHtml;
-    btn.disabled = false;
+    if (document.body.contains(btn)) {
+      btn.innerHTML = oldHtml;
+      btn.disabled = false;
+    }
   }
 }
 
