@@ -5,6 +5,7 @@ const { Client } = require('ssh2');
 const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
+const oracledb = require('oracledb');
 
 const app = express();
 const server = http.createServer(app);
@@ -219,7 +220,7 @@ app.get('/api/clients', (req, res) => {
 // Endpoint para reiniciar o tomcat
 app.post('/api/restart-tomcat', async (req, res) => {
   const { hostnames, targetEnv, produto, balHost, balTenancy } = req.body;
-  
+
   if (!hostnames || !hostnames.length || !targetEnv || !produto || !balHost || !balTenancy) {
     return res.status(400).json({ error: 'Missing parameters' });
   }
@@ -243,9 +244,9 @@ app.post('/api/restart-tomcat', async (req, res) => {
   for (const machine of machines) {
     res.write(`\n----------------------------------------\n`);
     res.write(`=== Conectando na máquina: ${machine.hostname} (${machine.ambiente}) ===\n`);
-    
+
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
-    
+
     const targetDir = getTargetDir(machine.ambiente);
     let cachedTomcat = tomcatCache[machine.ip] ? tomcatCache[machine.ip][produto] : null;
 
@@ -374,14 +375,14 @@ ENDSSH
               clearTimeout(timer); jumpClient.end();
               if (!settled) { settled = true; reject(err3); }
             });
-            soulClient.connect({ sock: stream, username: SSH_USER, password: soulPassword, readyTimeout: 15000 });
+            soulClient.connect({ sock: stream, username: SSH_USER, password: soulPassword, readyTimeout: 7500 });
           });
         });
         jumpClient.on('error', err => {
           clearTimeout(timer);
           if (!settled) { settled = true; reject(err); }
         });
-        jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 12000 });
+        jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 6000 });
       });
     } catch (err) {
       res.write(`❌ Erro no restart via SSH: ${err.message}\n`);
@@ -395,7 +396,7 @@ ENDSSH
 // Endpoint para rollback
 app.post('/api/rollback-tomcat', async (req, res) => {
   const { hostnames, targetEnv, produto, backupPath, balHost, balTenancy } = req.body;
-  
+
   if (!hostnames || !hostnames.length || !targetEnv || !produto || !backupPath || !balHost || !balTenancy) {
     return res.status(400).json({ error: 'Missing parameters' });
   }
@@ -419,7 +420,7 @@ app.post('/api/rollback-tomcat', async (req, res) => {
   for (const machine of machines) {
     res.write(`\n----------------------------------------\n`);
     res.write(`=== Conectando na máquina: ${machine.hostname} (${machine.ambiente}) ===\n`);
-    
+
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
 
     const targetDir = getTargetDir(machine.ambiente);
@@ -465,7 +466,7 @@ EOF
       await new Promise((resolve, reject) => {
         let settled = false;
         const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout general')); } }, 60000);
-        
+
         const jumpClient = new Client();
         jumpClient.on('ready', () => {
           jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
@@ -494,14 +495,14 @@ EOF
               clearTimeout(timer); jumpClient.end();
               if (!settled) { settled = true; reject(err3); }
             });
-            soulClient.connect({ sock: stream, username: SSH_USER, password: soulPassword, readyTimeout: 15000 });
+            soulClient.connect({ sock: stream, username: SSH_USER, password: soulPassword, readyTimeout: 7500 });
           });
         });
         jumpClient.on('error', err => {
           clearTimeout(timer);
           if (!settled) { settled = true; reject(err); }
         });
-        jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 12000 });
+        jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 6000 });
       });
     } catch (err) {
       res.write(`❌ Erro no rollback via SSH: ${err.message}\n`);
@@ -542,29 +543,29 @@ app.post('/api/sync-release', async (req, res) => {
   const connectMachine = async (machine, password) => {
     return new Promise((resolve, reject) => {
       let settled = false;
-      const timer = setTimeout(() => { if(!settled){ settled=true; reject(new Error('Timeout connecting to '+machine.hostname)); } }, 20000);
-      
+      const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout connecting to ' + machine.hostname)); } }, 20000);
+
       const jumpClient = new Client();
       jumpClient.on('ready', () => {
         jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
-          if (err) { clearTimeout(timer); jumpClient.end(); if(!settled){ settled=true; reject(err); } return; }
+          if (err) { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(err); } return; }
           const soulClient = new Client();
           soulClient.on('ready', () => {
             clearTimeout(timer);
-            if(!settled){ settled=true; resolve({ jumpClient, soulClient }); }
+            if (!settled) { settled = true; resolve({ jumpClient, soulClient }); }
           });
           soulClient.on('error', err3 => {
             clearTimeout(timer); jumpClient.end();
-            if(!settled){ settled=true; reject(err3); }
+            if (!settled) { settled = true; reject(err3); }
           });
-          soulClient.connect({ sock: stream, username: SSH_USER, password: password, readyTimeout: 15000 });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: password, readyTimeout: 7500 });
         });
       });
       jumpClient.on('error', err => {
         clearTimeout(timer);
-        if(!settled){ settled=true; reject(err); }
+        if (!settled) { settled = true; reject(err); }
       });
-      jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 12000 });
+      jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 6000 });
     });
   };
 
@@ -574,7 +575,7 @@ app.post('/api/sync-release', async (req, res) => {
       connectMachine(prdMachine, prdPassword),
       connectMachine(tstMachine, tstPassword)
     ]);
-    
+
     prdJumpClient = prdConn.jumpClient; prdSoulClient = prdConn.soulClient;
     tstJumpClient = tstConn.jumpClient; tstSoulClient = tstConn.soulClient;
     res.write(`✅ Conexões estabelecidas com sucesso!\n\n`);
@@ -585,7 +586,7 @@ app.post('/api/sync-release', async (req, res) => {
         client.exec(cmd, (err, stream) => {
           if (err) return reject(err);
           let out = '', errOut = '', finished = false;
-          
+
           const timer = setTimeout(() => {
             if (!finished) reject(new Error(`Timeout (${timeoutMs}ms) na etapa: ${stepName}`));
           }, timeoutMs);
@@ -593,13 +594,13 @@ app.post('/api/sync-release', async (req, res) => {
           stream.on('data', d => {
             out += d.toString();
             const lines = d.toString().split('\n');
-            for(let l of lines) if(l.trim()) res.write(`   [${stepName}] ${l.trim()}\n`);
+            for (let l of lines) if (l.trim()) res.write(`   [${stepName}] ${l.trim()}\n`);
           });
-          
+
           stream.stderr.on('data', d => {
             errOut += d.toString();
             const lines = d.toString().split('\n');
-            for(let l of lines) if(l.trim()) res.write(`   [${stepName} - ERRO] ${l.trim()}\n`);
+            for (let l of lines) if (l.trim()) res.write(`   [${stepName} - ERRO] ${l.trim()}\n`);
           });
 
           stream.on('close', (code) => {
@@ -607,11 +608,11 @@ app.post('/api/sync-release', async (req, res) => {
             clearTimeout(timer);
             resolve({ code, stdout: out.trim(), stderr: errOut.trim() });
           });
-          
+
           stream.on('error', e => {
-             finished = true;
-             clearTimeout(timer);
-             reject(e);
+            finished = true;
+            clearTimeout(timer);
+            reject(e);
           });
         });
       });
@@ -656,7 +657,7 @@ app.post('/api/sync-release', async (req, res) => {
     console.log(`[SYNC] 5/5 - Sincronizando arquivos (tar pipe). Acompanhando logs de transferência...`);
     const prdPath = `/MV/apps/soulmv_prd/products/${produto}/${release}`;
     const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
-    
+
     await execCmd(tstSoulClient, `sudo su -c "mkdir -p ${tstPath}"`, 'TST-MKDIR');
 
     res.write(`   - Compactando ${prdPath}/forms\n`);
@@ -665,36 +666,36 @@ app.post('/api/sync-release', async (req, res) => {
     await new Promise((resolve, reject) => {
       prdSoulClient.exec(`sudo su -c "tar -czf - -C ${prdPath} forms"`, (err, prdStream) => {
         if (err) return reject(err);
-        
+
         prdStream.stderr.on('data', d => {
           const str = d.toString();
           const lines = str.split('\n');
-          for(let l of lines) if (l.trim()) res.write(`   [PRD-TAR-ERRO] ${l.trim()}\n`);
+          for (let l of lines) if (l.trim()) res.write(`   [PRD-TAR-ERRO] ${l.trim()}\n`);
         });
 
         tstSoulClient.exec(`sudo su -c "tar -xzvf - -C ${tstPath}"`, (err2, tstStream) => {
           if (err2) return reject(err2);
-          
+
           let tstErr = '';
           tstStream.stderr.on('data', d => {
             const str = d.toString();
             tstErr += str;
             const lines = str.split('\n');
-            for(let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
+            for (let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
           });
-          
+
           tstStream.on('data', d => {
             const lines = d.toString().split('\n');
-            for(let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
+            for (let l of lines) if (l.trim()) res.write(`   [TST-TAR] ${l.trim()}\n`);
           });
-          
+
           prdStream.pipe(tstStream);
-          
+
           tstStream.on('close', (code) => {
             if (code !== 0 && !tstErr.includes('forms/')) reject(new Error(tstErr || 'Erro no tar TST'));
             else resolve();
           });
-          
+
           prdStream.on('error', (e) => reject(e));
           tstStream.on('error', (e) => reject(e));
         });
@@ -702,7 +703,7 @@ app.post('/api/sync-release', async (req, res) => {
     });
 
     res.write(`✅ Arquivos transferidos com sucesso!\n`);
-    
+
     // NOVO PASSO: Copiar conf da release anterior para a nova
     if (tstInstalledVer && tstInstalledVer !== release) {
       res.write(`>> [6/7] Copiando pasta 'conf' da versão atual (${tstInstalledVer}) para a nova (${release}) no TST...\n`);
@@ -724,10 +725,10 @@ app.post('/api/sync-release', async (req, res) => {
   } catch (err) {
     res.write(`\n❌ ERRO CRÍTICO DURANTE A SINCRONIZAÇÃO:\n${err.message}\n`);
   } finally {
-    if(prdSoulClient) prdSoulClient.end();
-    if(prdJumpClient) prdJumpClient.end();
-    if(tstSoulClient) tstSoulClient.end();
-    if(tstJumpClient) tstJumpClient.end();
+    if (prdSoulClient) prdSoulClient.end();
+    if (prdJumpClient) prdJumpClient.end();
+    if (tstSoulClient) tstSoulClient.end();
+    if (tstJumpClient) tstJumpClient.end();
     res.end();
   }
 });
@@ -831,7 +832,7 @@ app.get('/api/soul-machines', async (req, res) => {
       const pool = await getDB();
       if (pool) {
         const padded = codigo.replace(/^0+/, '').padStart(4, '0');
-        
+
         if (soulMachines.length === 0) {
           const [soulRows] = await pool.query(
             `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
@@ -904,18 +905,18 @@ app.post('/api/check-versions', async (req, res) => {
         client.exec(cmd, (err, stream) => {
           if (err) { clearTimeout(timer); client.end(); return reject(err); }
           stream.on('data', d => { output += d.toString(); });
-          stream.stderr.on('data', () => {});
+          stream.stderr.on('data', () => { });
           stream.on('close', () => { clearTimeout(timer); client.end(); resolve(output); });
         });
       });
 
       client.on('error', err => { clearTimeout(timer); reject(err); });
 
-      client.connect({ host, port: 22, username: SSH_USER, password, readyTimeout: 12000 });
+      client.connect({ host, port: 22, username: SSH_USER, password, readyTimeout: 6000 });
     });
   }
 
-  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 30000) {
+  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
     return new Promise((resolve, reject) => {
       const jumpClient = new Client();
       let settled = false;
@@ -941,7 +942,7 @@ app.post('/api/check-versions', async (req, res) => {
                 return;
               }
               s.on('data', d => { output += d.toString(); });
-              s.stderr.on('data', () => {});
+              s.stderr.on('data', () => { });
               s.on('close', () => {
                 clearTimeout(timer); soulClient.end(); jumpClient.end();
                 if (!settled) { settled = true; resolve(output); }
@@ -954,7 +955,7 @@ app.post('/api/check-versions', async (req, res) => {
             if (!settled) { settled = true; reject(err3); }
           });
 
-          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 7500 });
         });
       });
 
@@ -963,7 +964,7 @@ app.post('/api/check-versions', async (req, res) => {
         if (!settled) { settled = true; reject(err); }
       });
 
-      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 12000 });
+      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 7500 });
     });
   }
 
@@ -1008,7 +1009,7 @@ done
     try {
       const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, dynamicCMD);
       const tomcats = parseVersionOutput(raw);
-      
+
       // Update cache
       if (!tomcatCache[machine.ip]) tomcatCache[machine.ip] = {};
       for (const [tomcat, prods] of Object.entries(tomcats)) {
@@ -1016,7 +1017,7 @@ done
           tomcatCache[machine.ip][p.produto] = tomcat;
         }
       }
-      
+
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, tomcats });
     } catch (e) {
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: false, error: e.message, tomcats: {} });
@@ -1062,7 +1063,7 @@ fi
 `.trim();
   }
 
-  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 30000) {
+  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
     return new Promise((resolve, reject) => {
       const jumpClient = new Client();
       let settled = false;
@@ -1087,7 +1088,7 @@ fi
                 return;
               }
               s.on('data', d => { output += d.toString(); });
-              s.stderr.on('data', () => {});
+              s.stderr.on('data', () => { });
               s.on('close', () => {
                 clearTimeout(timer); soulClient.end(); jumpClient.end();
                 if (!settled) { settled = true; resolve(output); }
@@ -1098,7 +1099,7 @@ fi
             clearTimeout(timer); jumpClient.end();
             if (!settled) { settled = true; reject(err3); }
           });
-          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 7500 });
         });
       });
 
@@ -1107,7 +1108,7 @@ fi
         if (!settled) { settled = true; reject(err); }
       });
 
-      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 12000 });
+      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 6000 });
     });
   }
 
@@ -1162,7 +1163,7 @@ app.post('/api/batch-update', async (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
 
-  function sshChainExecStream(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, onData, timeout = 60000) {
+  function sshChainExecStream(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, onData, timeout = 15000) {
     return new Promise((resolve, reject) => {
       const jumpClient = new Client();
       let settled = false;
@@ -1197,14 +1198,14 @@ app.post('/api/batch-update', async (req, res) => {
             clearTimeout(timer); jumpClient.end();
             if (!settled) { settled = true; reject(err3); }
           });
-          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 7500 });
         });
       });
       jumpClient.on('error', err => {
         clearTimeout(timer);
         if (!settled) { settled = true; reject(err); }
       });
-      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 12000 });
+      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 6000 });
     });
   }
 
@@ -1263,7 +1264,7 @@ done
     `);
   }
   cmdParts.push(`EOF`);
-  
+
   const CMD = cmdParts.join('\n');
 
   for (const machine of machines) {
@@ -1284,7 +1285,7 @@ done
 
 
 
-// ─── Query Client DB Version via SSH Tunnel ───────────────
+// ─── Query Client DB Version via SSH + Oracle Direct Connect ───────────────
 app.post('/api/client-db-version', async (req, res) => {
   const { balHost, balTenancy, machines } = req.body;
   if (!balHost || !machines || !machines.length) {
@@ -1299,62 +1300,296 @@ app.post('/api/client-db-version', async (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
 
-  const environments = [...new Set(machines.map(m => m.ambiente.toUpperCase()))];
-  const { exec } = require('child_process');
-  const net = require('net');
+  // Same sshChainExec as check-versions (exact copy)
+  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
+    return new Promise((resolve, reject) => {
+      const jumpClient = new Client();
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) { settled = true; jumpClient.end(); reject(new Error('Timeout na cadeia SSH')); }
+      }, timeout);
 
-  for (const env of environments) {
-    res.write(`\n=== Ambiente: ${env} ===\n`);
-    
-    let envPattern = "soulmv_*";
-    if (env === "PRD") envPattern = "soulmv_prd";
-    if (env === "TST") envPattern = "soulmv_trn soulmv_sml soulmv_tst";
+      jumpClient.on('ready', () => {
+        jumpClient.forwardOut('127.0.0.1', 0, soulPrivIp, 22, (err, stream) => {
+          if (err) {
+            clearTimeout(timer); jumpClient.end();
+            if (!settled) { settled = true; reject(err); }
+            return;
+          }
 
-    // 1. Script para apenas extrair as propriedades
-    const extractCmd = `sudo su << 'EOF'
-VERSAO_OUT=$(versao 2>/dev/null)
-CAS_LINE=$(echo "$VERSAO_OUT" | grep -i "mvautenticador-cas" | head -1)
-RELEASE=$(echo "$CAS_LINE" | awk '{print $NF}')
-if [ -z "$RELEASE" ]; then exit 1; fi
+          const soulClient = new Client();
+          soulClient.on('ready', () => {
+            let output = '';
+            soulClient.exec(cmd, (err2, s) => {
+              if (err2) {
+                clearTimeout(timer); soulClient.end(); jumpClient.end();
+                if (!settled) { settled = true; reject(err2); }
+                return;
+              }
+              s.on('data', d => { output += d.toString(); });
+              s.stderr.on('data', () => { });
+              s.on('close', () => {
+                clearTimeout(timer); soulClient.end(); jumpClient.end();
+                if (!settled) { settled = true; resolve(output); }
+              });
+            });
+          });
 
-DB_PROPS=""
-for dir in ${envPattern}; do
-  FOUND=$(ls /MV/apps/$dir/products/mvautenticador-cas/$RELEASE/conf/db.properties 2>/dev/null | head -1)
-  if [ -n "$FOUND" ]; then
-    DB_PROPS="$FOUND"
-    break
-  fi
+          soulClient.on('error', err3 => {
+            clearTimeout(timer); jumpClient.end();
+            if (!settled) { settled = true; reject(err3); }
+          });
+
+          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 7500 });
+        });
+      });
+
+      jumpClient.on('error', err => {
+        clearTimeout(timer);
+        if (!settled) { settled = true; reject(err); }
+      });
+
+      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 7500 });
+    });
+  }
+
+  // Parse Java-style properties content
+  function parseProperties(content) {
+    const props = {};
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = trimmed.substring(0, eqIdx).trim();
+      const val = trimmed.substring(eqIdx + 1).trim();
+      props[key] = val;
+    }
+    return props;
+  }
+
+  // Parse Oracle JDBC URL (supports simple, service, SID, and RAC DESCRIPTION formats)
+  function parseOracleJdbc(url) {
+    // Format: jdbc:oracle:thin:@//host:port/service
+    let match = url.match(/@\/\/([^:]+):(\d+)\/(.+)/);
+    if (match) return { host: match[1], port: parseInt(match[2]), service: match[3] };
+
+    // Format: jdbc:oracle:thin:@(DESCRIPTION=...HOST=xxx...PORT=xxx...SERVICE_NAME=xxx...)
+    match = url.match(/HOST=([^)]+)/);
+    const portMatch = url.match(/PORT=(\d+)/);
+    const serviceMatch = url.match(/SERVICE_NAME=([^)]+)/);
+    if (match && portMatch && serviceMatch) {
+      return { host: match[1], port: parseInt(portMatch[1]), service: serviceMatch[1] };
+    }
+
+    // Format: jdbc:oracle:thin:@host:port/service
+    match = url.match(/@([^:(]+):(\d+)\/(.+)/);
+    if (match) return { host: match[1], port: parseInt(match[2]), service: match[3] };
+
+    // Format: jdbc:oracle:thin:@host:port:sid
+    match = url.match(/@([^:(]+):(\d+):(.+)/);
+    if (match) return { host: match[1], port: parseInt(match[2]), sid: match[3] };
+
+    return null;
+  }
+
+  // Iterate per machine (same pattern as check-versions)
+  const alreadyConnectedDb = {};
+
+  for (const machine of machines) {
+    const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+    const env = (machine.ambiente || '').toUpperCase();
+    const targetDir = getTargetDir(machine.ambiente);
+
+    res.write(`\n=== ${machine.hostname} (${env}) ===\n`);
+    res.write(`[1/3] Conectando via SSH em ${machine.hostname} (${machine.ip})...\n`);
+
+    // Build script to find config file using the version from Tomcat XML (same approach as check-versions)
+    const extractCmd = `
+for serverdir in /MV/servers/${targetDir}/; do
+  [ -d "$serverdir" ] || continue
+  for dir in "$serverdir"/*/; do
+    [ -d "$dir" ] || continue
+    lhpath="$dir/conf/Catalina/localhost"
+    [ -d "$lhpath" ] || continue
+    for xml in "$lhpath"/soul-product-forms.xml; do
+      [ -f "$xml" ] || continue
+      CURRENT_VER=$(grep -oP 'docBase="[^"]*products/soul-product-forms/\\K[^/"]+' "$xml" 2>/dev/null | head -1)
+      if [ -n "$CURRENT_VER" ]; then
+        for BASE_DIR in /MV/apps/${targetDir} /MV/apps/soulmv_sml /MV/apps/soulmv_tst; do
+          for CONF_FILE in "application.config.properties" "db.properties"; do
+            FULL_PATH="$BASE_DIR/products/soul-product-forms/$CURRENT_VER/conf/$CONF_FILE"
+            if [ -f "$FULL_PATH" ]; then
+              echo "FOUND_BASE=$BASE_DIR"
+              echo "FOUND_VERSION=$CURRENT_VER"
+              echo "FOUND_FILE=$CONF_FILE"
+              echo "---PROPS_START---"
+              cat "$FULL_PATH"
+              echo ""
+              echo "---PROPS_END---"
+              exit 0
+            fi
+          done
+        done
+      fi
+    done
+  done
 done
-
-elif [[ "$DB_URL" == *"mysql"* ]]; then
-  echo "Tipo: MYSQL"
-  DB_HOST=$(echo "$DB_URL" | grep -oP '(?<=mysql://)([^:/]+)')
-  DB_PORT=$(echo "$DB_URL" | grep -oP '(?<=:)\\d+(?=/)' | head -1)
-  DB_PORT=\${DB_PORT:-3306}
-  echo "Host/Porta: $DB_HOST:$DB_PORT"
-  
-  CONTAINER=$(docker ps --format "{{.Names}}" | grep -i -E 'mysql|db' | head -1)
-  if [ -n "$CONTAINER" ]; then
-    echo "Container Docker: $CONTAINER"
-    docker exec "$CONTAINER" mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" -e "$QUERY" 2>&1
-  else
-    echo "Container não encontrado, tentando CLI local..."
-    mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASS" -e "$QUERY" 2>&1
-  fi
-else
-  echo "ERRO: Tipo de banco não suportado ($DB_URL)"
-  exit 1
-fi
-EOF
-`;
+echo "NOT_FOUND"
+`.trim();
 
     try {
-      await sshExecStream(balHost, balPassword, CMD, (chunk) => {
-        res.write(chunk);
-      });
-      res.write(`=== Fim: ${env} ===\\n`);
-    } catch (e) {
-      res.write(`ERRO no ambiente ${env}: ${e.message}\\n`);
+      const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, extractCmd);
+
+      if (raw.includes('NOT_FOUND') || !raw.trim()) {
+        res.write(`⚠ Nenhum arquivo de configuração encontrado em ${machine.hostname}\n`);
+        if (raw.trim() && raw.trim() !== 'NOT_FOUND') {
+          res.write(`  Saída SSH: ${raw.trim()}\n`);
+        }
+        continue;
+      }
+
+      // Parse response
+      const baseLine = raw.match(/FOUND_BASE=(.+)/);
+      const versionLine = raw.match(/FOUND_VERSION=(.+)/);
+      const fileLine = raw.match(/FOUND_FILE=(.+)/);
+      const propsMatch = raw.match(/---PROPS_START---([\s\S]*?)---PROPS_END---/);
+
+      if (!baseLine || !versionLine || !propsMatch) {
+        res.write(`⚠ Resposta inesperada do SSH:\n`);
+        res.write(`${raw}\n`);
+        continue;
+      }
+
+      const foundBase = baseLine[1].trim();
+      const foundVersion = versionLine[1].trim();
+      const foundFile = fileLine ? fileLine[1].trim() : 'unknown';
+      const propsContent = propsMatch[1];
+      const props = parseProperties(propsContent);
+
+      res.write(`✅ Arquivo encontrado!\n`);
+      res.write(`   Base: ${foundBase}/products/soul-product-forms\n`);
+      res.write(`   Versão: ${foundVersion}\n`);
+      res.write(`   Arquivo: ${foundFile}\n\n`);
+
+      // Extract DB credentials (support multiple property naming conventions)
+      const dbUrl = props['connectionSettings.url'] || props['db.url'] || props['spring.datasource.url'] || props['datasource.url'] || props['jdbc.url'] || '';
+      const dbUser = props['connectionSettings.user'] || props['connectionSettings.username'] || props['db.username'] || props['spring.datasource.username'] || props['datasource.username'] || props['jdbc.username'] || '';
+      const dbPass = props['connectionSettings.password'] || props['db.password'] || props['spring.datasource.password'] || props['datasource.password'] || props['jdbc.password'] || '';
+
+      if (!dbUrl) {
+        res.write(`⚠ Não encontrou URL de conexão nas propriedades.\n`);
+        res.write(`  Chaves encontradas: ${Object.keys(props).join(', ')}\n`);
+        res.write(`\n--- Conteúdo completo do arquivo ---\n${propsContent}\n---\n`);
+        continue;
+      }
+
+      res.write(`[2/3] Credenciais extraídas:\n`);
+      res.write(`   URL: ${dbUrl}\n`);
+      res.write(`   Usuário: ${dbUser}\n`);
+      res.write(`   Senha: ${'*'.repeat(Math.min(dbPass.length, 8))}...\n\n`);
+
+      const oraConn = parseOracleJdbc(dbUrl);
+      if (!oraConn) {
+        res.write(`⚠ Não foi possível fazer parse da URL JDBC: ${dbUrl}\n`);
+        continue;
+      }
+
+      res.write(`   Oracle Host: ${oraConn.host}\n`);
+      res.write(`   Oracle Port: ${oraConn.port}\n`);
+      res.write(`   Oracle ${oraConn.service ? 'Service' : 'SID'}: ${oraConn.service || oraConn.sid}\n\n`);
+
+      // Avoid connecting to the same Oracle DB twice (PRD and TST may share machines)
+      const dbKey = `${oraConn.host}:${oraConn.port}/${oraConn.service || oraConn.sid}`;
+      if (alreadyConnectedDb[dbKey]) {
+        res.write(`ℹ Banco ${dbKey} já foi consultado acima. Pulando.\n`);
+        continue;
+      }
+      alreadyConnectedDb[dbKey] = true;
+
+      // Step 3: Query Oracle via sqlplus on the remote machine (it can reach the DB on the private network)
+      res.write(`[3/3] Executando sqlplus na máquina remota para consultar o banco...\n`);
+
+      const connectString = oraConn.service
+        ? `${dbUser}/${dbPass}@${oraConn.host}:${oraConn.port}/${oraConn.service}`
+        : `${dbUser}/${dbPass}@${oraConn.host}:${oraConn.port}/${oraConn.sid}`;
+
+      // Use sqlplus with markup CSV for easy parsing, fallback to regular sqlplus
+      const sqlCmd = `
+export ORACLE_HOME=$(ls -d /u01/app/oracle/product/*/dbhome_1 2>/dev/null | head -1 || ls -d /opt/oracle/product/*/dbhome_1 2>/dev/null | head -1 || echo "")
+if [ -z "$ORACLE_HOME" ]; then
+  # Try to find sqlplus in PATH or common locations
+  SQLPLUS=$(which sqlplus 2>/dev/null || ls /u01/app/oracle/product/*/dbhome_1/bin/sqlplus 2>/dev/null | head -1 || ls /opt/oracle/instantclient*/sqlplus 2>/dev/null | head -1 || echo "")
+else
+  export PATH=$ORACLE_HOME/bin:$PATH
+  export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+  SQLPLUS=sqlplus
+fi
+
+if [ -z "$SQLPLUS" ] && ! command -v sqlplus &>/dev/null; then
+  echo "SQLPLUS_NOT_FOUND"
+  exit 0
+fi
+
+echo "---SQL_START---"
+$SQLPLUS -S "${connectString}" <<EOSQL
+SET PAGESIZE 0
+SET LINESIZE 1000
+SET FEEDBACK OFF
+SET HEADING ON
+SET COLSEP '|'
+SET TRIMSPOOL ON
+SET TRIMOUT ON
+COLUMN CD_VERSAO FORMAT 99999999
+COLUMN DS_VERSAO FORMAT A40
+COLUMN DT_VERSAO FORMAT A22
+COLUMN DS_RELEASE FORMAT A30
+COLUMN SN_ATIVO FORMAT A5
+SELECT * FROM dbamv.gcm_versao;
+EXIT;
+EOSQL
+echo ""
+echo "---SQL_END---"
+`.trim();
+
+      try {
+        const sqlRaw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, sqlCmd, 60000);
+
+        if (sqlRaw.includes('SQLPLUS_NOT_FOUND')) {
+          res.write(`⚠ sqlplus não encontrado na máquina ${machine.hostname}.\n`);
+          res.write(`   💡 A máquina pode não ter o Oracle Client instalado.\n`);
+          continue;
+        }
+
+        const sqlMatch = sqlRaw.match(/---SQL_START---([\s\S]*?)---SQL_END---/);
+        if (!sqlMatch) {
+          res.write(`⚠ Resposta inesperada do sqlplus:\n${sqlRaw}\n`);
+          continue;
+        }
+
+        const sqlOutput = sqlMatch[1].trim();
+
+        // Check for Oracle errors
+        if (sqlOutput.includes('ORA-') || sqlOutput.includes('SP2-')) {
+          res.write(`❌ Erro Oracle:\n${sqlOutput}\n`);
+          continue;
+        }
+
+        if (!sqlOutput || sqlOutput.length < 5) {
+          res.write(`⚠ Nenhum dado retornado do banco.\n`);
+          continue;
+        }
+
+        res.write(`✅ Consulta executada com sucesso!\n\n`);
+        res.write(`📋 Resultado gcm_versao:\n\n`);
+        res.write(sqlOutput + '\n');
+
+      } catch (sqlErr) {
+        res.write(`❌ Erro ao executar sqlplus via SSH: ${sqlErr.message}\n`);
+      }
+
+    } catch (sshErr) {
+      res.write(`❌ Erro SSH em ${machine.hostname}: ${sshErr.message}\n`);
     }
   }
 
@@ -1407,15 +1642,15 @@ wss.on('connection', (ws) => {
         }
 
         const currentHost = hostQueue[hostIndex];
-        const currentPwd  = passwordQueue[attemptIndex % passwordQueue.length];
-        const pwdLabel    = Object.entries(SSH_PASSWORDS).find(([,v]) => v === currentPwd)?.[0] || 'custom';
+        const currentPwd = passwordQueue[attemptIndex % passwordQueue.length];
+        const pwdLabel = Object.entries(SSH_PASSWORDS).find(([, v]) => v === currentPwd)?.[0] || 'custom';
 
         ws.send(JSON.stringify({
           type: 'log',
           msg: `🔄 Tentativa ${attemptIndex + 1}: ${currentHost} | Tenancy: ${pwdLabel} | Usuário: ${SSH_USER}`,
         }));
 
-        if (sshClient) { try { sshClient.end(); } catch {} }
+        if (sshClient) { try { sshClient.end(); } catch { } }
         sshClient = new Client();
 
         sshClient.on('ready', () => {
@@ -1459,9 +1694,9 @@ wss.on('connection', (ws) => {
 
         sshClient.on('error', (err) => {
           const errMsg = err.message || '';
-          const isAuthErr    = errMsg.toLowerCase().includes('auth') || errMsg.includes('ECONNREFUSED') === false && errMsg.includes('authentication');
+          const isAuthErr = errMsg.toLowerCase().includes('auth') || errMsg.includes('ECONNREFUSED') === false && errMsg.includes('authentication');
           const isTimeoutErr = errMsg.toLowerCase().includes('timeout') || errMsg.toLowerCase().includes('timed out');
-          const isNetErr     = errMsg.includes('ECONNREFUSED') || errMsg.includes('EHOSTUNREACH') || errMsg.includes('ENOTFOUND');
+          const isNetErr = errMsg.includes('ECONNREFUSED') || errMsg.includes('EHOSTUNREACH') || errMsg.includes('ENOTFOUND');
 
           console.log(`[SSH] Error on ${currentHost} (pwd:${pwdLabel}): ${errMsg}`);
 
@@ -1501,7 +1736,7 @@ wss.on('connection', (ws) => {
           port: 22,
           username: SSH_USER,
           password: currentPwd,
-          readyTimeout: 12000,
+          readyTimeout: 6000,
           keepaliveInterval: 10000,
         });
       }
@@ -1548,5 +1783,5 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📂 Serving files from: ${__dirname}`);
   console.log(`📋 Inventory: ${inventory.length} unique machines loaded\n`);
   // Try DB in background
-  getDB().catch(() => {});
+  getDB().catch(() => { });
 });
