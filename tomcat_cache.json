@@ -609,5 +609,22 @@
   "10.97.160.7": {},
   "10.97.160.8": {},
   "10.97.160.9": {},
-  "10.97.160.11": {}
+  "10.97.160.11": {},
+  "10.22.1.4": {
+    "diagnostico-ws": "tomcat8200",
+    "integracao": "tomcat8200",
+    "mv": "tomcat8200",
+    "mv_reports": "tomcat8210",
+    "mvpep": "tomcat8220",
+    "mveditor": "tomcat8230",
+    "pagu_reports": "tomcat8240",
+    "pagu": "tomcat8240",
+    "mvgestorfluxo": "tomcat8246",
+    "mvpainelrecepcao": "tomcat8246",
+    "mvpainel": "tomcat8246",
+    "mvsacr": "tomcat8246",
+    "mvtotemsenha": "tomcat8246",
+    "report-designer": "tomcat8620",
+    "report-executor": "tomcat8720"
+  }
 }

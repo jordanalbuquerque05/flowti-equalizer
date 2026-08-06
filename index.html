@@ -874,6 +874,14 @@ function renderSoulPanel(panel, data) {
   `;
 }
 
+function getBestBalForMachines(machinesArray) {
+  if (!soulData || !soulData.bals || !soulData.bals.length) return null;
+  if (!machinesArray || !machinesArray.length) return soulData.bals[0];
+  const targetEnv = machinesArray[0].ambiente || '';
+  const bestBal = soulData.bals.find(b => b.ambiente === targetEnv);
+  return bestBal || soulData.bals[0];
+}
+
 function toggleSoulChip(e, i) {
   const cb = document.getElementById(`soul-cb-${i}`);
   const chip = document.getElementById(`soul-chip-${i}`);
@@ -935,7 +943,7 @@ async function runFullCheck() {
     return;
   }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível.', 'err');
     return;
@@ -1127,7 +1135,7 @@ async function runVersionCheck() {
     return;
   }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível para este cliente.', 'err');
     return;
@@ -1305,7 +1313,7 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
   okBtn.disabled = true;
   overlay.style.display = 'flex';
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines([machine]);
 
   try {
     const res = await fetch('/api/check-releases', {
@@ -1433,7 +1441,7 @@ async function runDbCheck() {
 
   if (!selected.length) { showNotif('Selecione ao menos uma máquina.', 'warn'); return; }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível.', 'err'); return;
   }
@@ -1503,7 +1511,7 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
 
   if (!selected.length) { showNotif('Selecione ao menos uma máquina.', 'warn'); return; }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível.', 'err'); return;
   }
@@ -1878,7 +1886,7 @@ async function batchUpdateVersions(targetEnv) {
   );
   if (!confirmed) return;
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   const btnTst = document.getElementById('btn-batch-tst');
   const consoleDiv = document.getElementById('updateConsole');
   
@@ -2057,7 +2065,7 @@ async function triggerSyncRelease(produto) {
     if (!tstTomcat) tstTomcat = prdTomcat;
   }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines([tstMachine]);
 
   // ── Verificar se a pasta forms já existe no TST para esta release ──
   let forceOverwrite = false;
@@ -2275,7 +2283,7 @@ async function triggerTomcatRestart(produto) {
     return;
   }
 
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(typeof selected !== "undefined" ? selected : []);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível para conexão SSH.', 'err');
     return;
@@ -2376,7 +2384,7 @@ async function checkSingleProductVersion(btn, produto) {
   });
 
   if (!selected.length) return;
-  const balRef = soulData.bals[0];
+  const balRef = getBestBalForMachines(selected);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') return;
 
   const oldHtml = btn.innerHTML;
