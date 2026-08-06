@@ -1875,6 +1875,7 @@ async function batchUpdateVersions(targetEnv) {
   window.lastTargetMachines = targetMachines;
   window.lastBalRef = balRef;
   
+  disableAllActionBtns();
   if (btnTst) btnTst.disabled = true;
   const consoleContainer = document.getElementById('updateConsoleContainer');
   if (consoleContainer) consoleContainer.style.display = 'block';
@@ -1987,6 +1988,7 @@ async function batchUpdateVersions(targetEnv) {
     }
   } finally {
     if (btnTst) btnTst.disabled = false;
+    enableAllActionBtns();
     const btnCancel = document.getElementById('btnCancelProcess');
     if (btnCancel) btnCancel.style.display = 'none';
     currentAbortController = null;
