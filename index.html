@@ -42,21 +42,13 @@
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header>
-    <div class="header-logo">
-      <div style="display: flex; align-items: center; justify-content: center; color: var(--accent); margin-right: 4px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <!-- Trilhas dos dois ambientes -->
-          <path d="M8 3v18" stroke-opacity="0.3"/>
-          <path d="M16 3v18" stroke-opacity="0.3"/>
-          <!-- Niveladores exatamente na mesma altura (equalizados) -->
-          <rect x="5" y="9" width="6" height="6" rx="1" />
-          <rect x="13" y="9" width="6" height="6" rx="1" />
-          <!-- Elo de ligação indicando igualdade/sincronia -->
-          <path d="M11 12h2" />
-        </svg>
+    <div class="header-logo" style="display:flex; align-items:center; gap:10px;">
+      <div style="font-size: 26px; font-weight: 800; letter-spacing: -1.2px; line-height: 1;">
+         <span style="color: #ffffff;">flow</span><span style="color: var(--accent);">ti</span>
       </div>
+      <div style="width: 2px; height: 22px; background: var(--border-bright); margin: 0 4px; border-radius: 2px;"></div>
       <div>
-        <div class="logo-text" style="font-size: 22px; letter-spacing: -0.5px;">Equalizer Ops</div>
+        <div class="logo-text" style="font-size: 16px; font-weight: 500; color: var(--text-dim); letter-spacing: -0.3px;">Equalizer Ops</div>
       </div>
     </div>
     <div class="header-spacer"></div>
@@ -168,8 +160,33 @@
   100% { opacity: 1; transform: scale(1); }
 }
 </style>
+<!-- Modal de Trocar Versão TST -->
+<div id="swapVerModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-card); border:1px solid var(--border-bright); border-radius:var(--radius-lg); width:460px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden; animation:modal-pop 0.2s ease-out;">
+    <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; align-items:center; gap:10px;">
+      <span style="font-size:20px;">🔄</span>
+      <h3 id="swapVerTitle" style="color:var(--text-primary); font-size:16px; font-weight:600; margin:0;">Trocar Versão em TST</h3>
+    </div>
+    <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+      <p id="swapVerDesc" style="color:var(--text-dim); font-size:13px; line-height:1.6; margin:0;"></p>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <label style="font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.05em;">VERSÃO ATUAL</label>
+        <div id="swapVerCurrent" style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--warning); background:rgba(245,158,11,0.1); padding:6px 10px; border-radius:4px; border:1px solid rgba(245,158,11,0.25);"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <label style="font-size:11px; color:var(--text-muted); font-weight:600; letter-spacing:0.05em;">NOVA VERSÃO</label>
+        <div id="swapVerLoadingState" style="font-size:12px; color:var(--text-dim);"><span class="spinner"></span> Buscando versões disponíveis...</div>
+        <select id="swapVerSelect" style="display:none; padding:8px 10px; font-size:13px; border-radius:6px; border:1px solid var(--border-bright); background:#1e1e1e; color:#fff; font-family:'JetBrains Mono',monospace;"></select>
+      </div>
+    </div>
+    <div style="padding:16px 20px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255,255,255,0.05);">
+      <button id="swapVerCancelBtn" onclick="document.getElementById('swapVerModalOverlay').style.display='none'" style="padding:8px 16px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--text-primary); cursor:pointer; font-size:13px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Cancelar</button>
+      <button id="swapVerOkBtn" style="padding:8px 24px; border-radius:6px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px var(--accent-glow);" disabled>Trocar Versão</button>
+    </div>
+  </div>
+</div>
 
-<!-- Modal de Progresso - Restart Tomcat -->
+
 <div id="restartModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:10000; align-items:center; justify-content:center;">
   <div style="background:var(--bg-card); border:1px solid var(--border-bright); border-radius:var(--radius-lg); width:700px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,0.7); overflow:hidden; animation:modal-pop 0.2s ease-out; display:flex; flex-direction:column; max-height:85vh;">
     <!-- Header -->
@@ -890,6 +907,20 @@ function toggleSoulPanelBody() {
   if (toggle) toggle.classList.toggle('open', hidden);
 }
 
+function disableAllActionBtns() {
+  ['btnFullCheck', 'btnCheckVersions', 'btnCheckReleases', 'btnCheckDb'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+}
+
+function enableAllActionBtns() {
+  ['btnFullCheck', 'btnCheckVersions', 'btnCheckReleases', 'btnCheckDb'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = false;
+  });
+}
+
 async function runFullCheck() {
   const btn = document.getElementById('btnFullCheck');
   const progress = document.getElementById('versionProgress');
@@ -930,7 +961,7 @@ async function runFullCheck() {
     }
   }, 150);
 
-  btn.disabled = true;
+  disableAllActionBtns();
   btn.innerHTML = `<span class="spinner" style="width:16px;height:16px;margin-right:8px;border-width:2px;"></span> Verificando...`;
   tableWrap.innerHTML = '';
   relWrap.innerHTML = '';
@@ -948,7 +979,7 @@ async function runFullCheck() {
 
   try {
     const body = {
-      balHost: balRef.public_ip,
+      balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
@@ -1055,7 +1086,7 @@ async function runFullCheck() {
 
     setTimeout(() => {
       document.getElementById('loadingModal').classList.remove('active');
-      btn.disabled = false;
+      enableAllActionBtns();
       btn.innerHTML = `<span>🚀</span> Verificação Completa`;
     }, 400);
   }
@@ -1102,7 +1133,7 @@ async function runVersionCheck() {
 
   clearOtherPanels('version');
 
-  btn.disabled = true;
+  disableAllActionBtns();
   btn.innerHTML = `<span class="spinner"></span> Verificando...`;
   tableWrap.innerHTML = '';
   progress.style.display = 'block';
@@ -1119,7 +1150,7 @@ async function runVersionCheck() {
 
   try {
     const body = {
-      balHost: balRef.public_ip,
+      balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
@@ -1162,7 +1193,7 @@ async function runVersionCheck() {
     logProgress(`❌ Erro: ${e.message}`);
     showNotif('Erro na verificação de versões: ' + e.message, 'err');
   } finally {
-    btn.disabled = false;
+    enableAllActionBtns();
     btn.innerHTML = `<span>⚡</span> Verificar Versões`;
   }
 }
@@ -1215,11 +1246,17 @@ function renderVersionTable(wrap, results) {
       const entries = machineMap[r.hostname]?.produtos[produto] || [];
       if (!entries.length) return `<td><span style="color:var(--text-dim);font-size:11px;">—</span></td>`;
 
+      const isTst = !(r.ambiente || '').toUpperCase().includes('PRD');
+      const machineJson = encodeURIComponent(JSON.stringify({ hostname: r.hostname, ip: r.ip, tenancy: r.tenancy, ambiente: r.ambiente }));
+
       const cellContent = entries.map(({ versao, tomcat }) => {
         const isRef = r.hostname === refHostname;
         const tagClass = isRef ? 'ref' : (versao === refVersao ? 'match' : 'diff');
         const icon = isRef ? '' : (versao === refVersao ? '✓' : '⚠');
-        return `<div class="ver-cell"><span class="ver-tag ${tagClass}">${icon} ${versao}</span><span class="ver-tomcat">${tomcat}</span></div>`;
+        const swapBtn = isTst
+          ? `<button onclick="trocarVersaoTST('${machineJson}','${produto}','${versao}','${tomcat}')" title="Trocar versão em TST" style="margin-left:6px;padding:1px 6px;font-size:9px;cursor:pointer;background:rgba(99,102,241,0.15);color:var(--accent);border:1px solid rgba(99,102,241,0.4);border-radius:3px;vertical-align:middle;" onmouseover="this.style.background='rgba(99,102,241,0.35)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'">🔄 Trocar</button>`
+          : '';
+        return `<div class="ver-cell"><span class="ver-tag ${tagClass}">${icon} ${versao}</span><span class="ver-tomcat">${tomcat}</span>${swapBtn}</div>`;
       }).join('');
 
       return `<td>${cellContent}</td>`;
@@ -1243,6 +1280,140 @@ function renderVersionTable(wrap, results) {
   `;
 }
 
+// ─── Trocar Versão em TST ────────────────────────────────────────────────────
+async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
+  const machine = typeof machineEncoded === 'string' ? JSON.parse(decodeURIComponent(machineEncoded)) : machineEncoded;
+
+  const overlay = document.getElementById('swapVerModalOverlay');
+  const titleEl = document.getElementById('swapVerTitle');
+  const descEl = document.getElementById('swapVerDesc');
+  const currentEl = document.getElementById('swapVerCurrent');
+  const loadingEl = document.getElementById('swapVerLoadingState');
+  const selectEl = document.getElementById('swapVerSelect');
+  const okBtn = document.getElementById('swapVerOkBtn');
+
+  titleEl.textContent = `Trocar Versão — ${produto}`;
+  descEl.innerHTML = `Máquina: <strong>${machine.hostname}</strong> (${machine.ambiente})`;
+  currentEl.textContent = versaoAtual;
+  loadingEl.style.display = 'block';
+  selectEl.style.display = 'none';
+  selectEl.innerHTML = '';
+  okBtn.disabled = true;
+  overlay.style.display = 'flex';
+
+  const balRef = soulData.bals[0];
+
+  try {
+    const res = await fetch('/api/check-releases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        balHost: balRef.public_ip, bals: soulData.bals, balTenancy: balRef.tenancy,
+        machines: [{ hostname: machine.hostname, ip: machine.ip, ambiente: machine.ambiente, tenancy: machine.tenancy }]
+      })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Falha ao buscar versões');
+
+    const machResult = data.results.find(r => r.hostname === machine.hostname);
+    const versoes = machResult && machResult.products && machResult.products[produto]
+      ? machResult.products[produto].filter(v => v !== versaoAtual)
+      : [];
+
+    loadingEl.style.display = 'none';
+
+    if (!versoes.length) {
+      selectEl.style.display = 'block';
+      selectEl.innerHTML = `<option disabled selected>Nenhuma outra versão disponível</option>`;
+      return;
+    }
+
+    versoes.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      selectEl.appendChild(opt);
+    });
+    selectEl.style.display = 'block';
+    okBtn.disabled = false;
+  } catch (e) {
+    loadingEl.style.display = 'none';
+    selectEl.style.display = 'block';
+    selectEl.innerHTML = `<option disabled selected>Erro ao buscar versões: ${e.message}</option>`;
+    return;
+  }
+
+  // Remover listener antigo se houver
+  const newOkBtn = okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+  newOkBtn.disabled = false;
+  newOkBtn.onclick = async () => {
+    const novaVersao = document.getElementById('swapVerSelect').value;
+    if (!novaVersao) { showNotif('Selecione uma versão.', 'warn'); return; }
+
+    overlay.style.display = 'none';
+
+    const confirmed = await showConfirmModal(
+      `Trocar Versão — ${produto}`,
+      `Alterar a versão do produto <strong>${produto}</strong> em <strong>${machine.hostname}</strong>?<br><br>
+       De: <code style="color:var(--warning)">${versaoAtual}</code><br>
+       Para: <code style="color:var(--success)">${novaVersao}</code><br><br>
+       <span style="font-size:11px;color:#888;">O XML do Tomcat <strong>${tomcat}</strong> será atualizado. O Tomcat precisa ser reiniciado para aplicar a mudança.</span>`
+    );
+    if (!confirmed) return;
+
+    const consoleDiv = document.getElementById('updateConsole');
+    consoleDiv.style.display = 'block';
+    const header = document.createElement('div');
+    header.style.color = '#6366f1';
+    header.textContent = `[TROCA-VERSÃO] ${produto}: ${versaoAtual} → ${novaVersao} em ${machine.hostname}`;
+    consoleDiv.appendChild(header);
+    consoleDiv.scrollTop = consoleDiv.scrollHeight;
+
+    try {
+      const updRes = await fetch('/api/batch-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          balHost: balRef.public_ip, bals: soulData.bals, balTenancy: balRef.tenancy,
+          machines: [{ hostname: machine.hostname, ip: machine.ip, ambiente: machine.ambiente, tenancy: machine.tenancy }],
+          updates: [{ produto, novaVersao }]
+        })
+      });
+
+      const reader = updRes.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          chunk.split('\n').forEach(line => {
+            if (!line.trim()) return;
+            const d = document.createElement('div');
+            d.style.color = line.includes('❌') || line.includes('ERRO') ? '#ff5555' :
+                            line.includes('✅') ? '#55ff55' : '#cccccc';
+            d.textContent = line;
+            consoleDiv.appendChild(d);
+          });
+          consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        done = readerDone;
+      }
+
+      showNotif(`✅ Versão de ${produto} alterada para ${novaVersao} em ${machine.hostname}!`, 'ok');
+      // Re-executar verificação para atualizar a tabela
+      runVersionCheck();
+    } catch (err) {
+      const errDiv = document.createElement('div');
+      errDiv.style.color = '#ff5555';
+      errDiv.textContent = `Erro ao trocar versão: ${err.message}`;
+      consoleDiv.appendChild(errDiv);
+    }
+  };
+}
+
 // ─── Consultar Banco de Dados ────────────────────────────────────────────────
 async function runDbCheck() {
   const btn = document.getElementById('btnCheckDb');
@@ -1263,7 +1434,7 @@ async function runDbCheck() {
 
   clearOtherPanels('db');
 
-  btn.disabled = true;
+  disableAllActionBtns();
   const oldBtnHtml = btn.innerHTML;
   btn.innerHTML = `<span class="spinner"></span> Consultando Banco...`;
   
@@ -1283,7 +1454,7 @@ async function runDbCheck() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        balHost: balRef.public_ip,
+        balHost: balRef.public_ip, bals: soulData.bals,
         balTenancy: balRef.tenancy,
         machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
       })
@@ -1306,7 +1477,7 @@ async function runDbCheck() {
   } catch (err) {
     consoleDiv.innerHTML += `\\n<span style="color:#bf616a">Erro na requisição: ${err.message}</span>`;
   } finally {
-    btn.disabled = false;
+    enableAllActionBtns();
     btn.innerHTML = oldBtnHtml;
   }
 }
@@ -1333,7 +1504,7 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
   clearOtherPanels('releases');
 
   const oldHtml = btn.innerHTML;
-  btn.disabled = true;
+  disableAllActionBtns();
   btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;margin-right:6px;"></span> Carregando...`;
   relWrap.innerHTML = '';
 
@@ -1343,7 +1514,7 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
 
   try {
     const body = {
-      balHost: balRef.public_ip,
+      balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
@@ -1377,7 +1548,7 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
   } catch (e) {
     showNotif('Erro ao listar releases: ' + e.message, 'err');
   } finally {
-    btn.disabled = false;
+    enableAllActionBtns();
     btn.innerHTML = oldHtml;
     if (loadingEl) loadingEl.style.display = 'none';
   }
@@ -1559,7 +1730,14 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
 
   wrap.innerHTML = `
     <div class="releases-panel-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-      <div><span>📦</span> Releases Disponíveis <span style="font-size:10px;font-weight:400;color:var(--text-dim);">Verde = mais recente</span></div>
+      <div style="display:flex; align-items:center; gap:16px; flex:1;">
+        <div><span>📦</span> Releases Disponíveis <span style="font-size:10px;font-weight:400;color:var(--text-dim);">Verde = mais recente</span></div>
+        <input type="text" id="filterProductInput" placeholder="Filtrar produto..." onkeyup="applyReleasesFilter()" style="padding:4px 10px; font-size:12px; border-radius:4px; border:1px solid var(--border-bright); background:#1e1e1e; color:#fff; width:100%; max-width:200px;">
+        ${isReadOnly ? '' : `
+          <button onclick="document.querySelectorAll('.update-product-cb').forEach(cb => { if(cb.closest('tr').style.display !== 'none') cb.checked = true; })" style="padding:4px 10px; font-size:11px; cursor:pointer; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:4px; margin-left:8px;">☑ Marcar Visíveis</button>
+          <button onclick="document.querySelectorAll('.update-product-cb').forEach(cb => cb.checked = false)" style="padding:4px 10px; font-size:11px; cursor:pointer; background:transparent; color:var(--text-dim); border:1px solid var(--border); border-radius:4px;">☐ Desmarcar Todos</button>
+        `}
+      </div>
       ${isReadOnly ? '' : (
         _showingOnlyDivergentes
           ? `<button id="btn-toggle-divergentes" onclick="toggleDivergentes(this)" style="padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.4); border-radius:20px; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">📋 Mostrar todos os produtos</button>`
@@ -1579,18 +1757,33 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
 }
 
 let _showingOnlyDivergentes = true;
-function toggleDivergentes(btn) {
-  _showingOnlyDivergentes = !_showingOnlyDivergentes;
+
+function applyReleasesFilter() {
+  const input = document.getElementById('filterProductInput');
+  const filter = input ? input.value.toLowerCase().trim() : '';
   const tbody = document.getElementById('releases-main-tbody');
   if (!tbody) return;
   const rows = tbody.querySelectorAll('tr[id^="row-rel-"]');
+  
   rows.forEach(row => {
-    if (_showingOnlyDivergentes) {
-      row.style.display = row.getAttribute('data-divergente') === 'true' ? '' : 'none';
-    } else {
-      row.style.display = '';
+    const isDivergente = row.getAttribute('data-divergente') === 'true';
+    const showByDivergente = !_showingOnlyDivergentes || isDivergente;
+    
+    let showByFilter = true;
+    if (filter) {
+      // Procura o nome do produto no label (primeira celula)
+      const label = row.querySelector('td label');
+      const text = label ? label.textContent.toLowerCase() : row.textContent.toLowerCase();
+      showByFilter = text.includes(filter);
     }
+    
+    row.style.display = (showByDivergente && showByFilter) ? '' : 'none';
   });
+}
+
+function toggleDivergentes(btn) {
+  _showingOnlyDivergentes = !_showingOnlyDivergentes;
+  applyReleasesFilter();
   if (_showingOnlyDivergentes) {
     btn.textContent = '📋 Mostrar todos os produtos';
     btn.style.background = 'rgba(239,68,68,0.15)';
@@ -1681,7 +1874,7 @@ async function batchUpdateVersions(targetEnv) {
 
   try {
     const body = {
-      balHost: balRef.public_ip,
+      balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
       machines: targetMachines.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy })),
       updates
@@ -1755,6 +1948,7 @@ async function batchUpdateVersions(targetEnv) {
     
     for (const upd of updates) {
       const btn = document.createElement('button');
+      btn.id = `console-restart-${upd.produto.replace(/[^a-zA-Z0-9]/g, '-')}`;
       btn.textContent = `Restart ${upd.produto}`;
       btn.style.padding = '4px 10px';
       btn.style.fontSize = '11px';
@@ -1828,21 +2022,58 @@ async function triggerSyncRelease(produto) {
     if (!tstTomcat) tstTomcat = prdTomcat;
   }
 
-  const confirmed = await showConfirmModal(
-    `Atenção: Copiar Release de PRD`,
-    `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir a pasta da release para a máquina de TST.`
-  );
-  if (!confirmed) return;
+  const balRef = soulData.bals[0];
+
+  // ── Verificar se a pasta forms já existe no TST para esta release ──
+  let forceOverwrite = false;
+  try {
+    showNotif('⏳ Verificando se a release já existe em TST...', 'ok');
+    const checkRes = await fetch('/api/check-release-exists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        balHost: balRef.public_ip, bals: soulData.bals, balTenancy: balRef.tenancy,
+        tstMachine: { hostname: tstMachine.hostname, ip: tstMachine.ip, tenancy: tstMachine.tenancy, ambiente: tstMachine.ambiente },
+        produto,
+        release: prdInstalledVer
+      })
+    });
+    const checkData = await checkRes.json();
+
+    if (checkData.exists) {
+      // Mostrar modal de alerta especial de sobrescrita
+      const confirmed = await showConfirmModal(
+        `⚠️ Release já existe em TST!`,
+        `A versão <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> já possui a pasta <code>forms</code> ou <code>uploadfiles</code> no ambiente de <strong>TESTE</strong> (${tstMachine.hostname}).<br><br>
+         Deseja <strong style="color:#ff5555;">remover todo o conteúdo atual</strong> dessas pastas em TST e copiar novamente do PRD?<br><br>
+         <span style="font-size:11px; color:#888;">Esta ação é irreversível para o conteúdo atual das pastas em TST.</span>`
+      );
+      if (!confirmed) return;
+      forceOverwrite = true;
+    } else {
+      // Confirmação padrão
+      const confirmed = await showConfirmModal(
+        `Atenção: Copiar Release de PRD`,
+        `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`
+      );
+      if (!confirmed) return;
+    }
+  } catch (checkErr) {
+    // Em caso de erro na verificação, prosseguir com confirmação padrão
+    const confirmed = await showConfirmModal(
+      `Atenção: Copiar Release de PRD`,
+      `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`
+    );
+    if (!confirmed) return;
+  }
 
   const consoleDiv = document.getElementById('updateConsole');
   consoleDiv.style.display = 'block';
   const div = document.createElement('div');
   div.style.color = '#22d3a0';
-  div.textContent = `[SYNC REQUESTED] Produto: ${produto} | Release: ${prdInstalledVer}`;
+  div.textContent = `[SYNC REQUESTED] Produto: ${produto} | Release: ${prdInstalledVer}${forceOverwrite ? ' | FORÇANDO SOBRESCRITA' : ''}`;
   consoleDiv.appendChild(div);
   consoleDiv.scrollTop = consoleDiv.scrollHeight;
-
-  const balRef = soulData.bals[0];
 
   try {
     const response = await fetch('/api/sync-release', {
@@ -1856,8 +2087,9 @@ async function triggerSyncRelease(produto) {
         prdTomcat,
         tstTomcat,
         tstInstalledVer,
-        balHost: balRef.public_ip,
-        balTenancy: balRef.tenancy
+        balHost: balRef.public_ip, bals: soulData.bals,
+        balTenancy: balRef.tenancy,
+        forceOverwrite
       })
     });
 
@@ -1930,7 +2162,7 @@ async function triggerRollback(produto) {
         targetEnv, 
         produto, 
         backupPath,
-        balHost: balRef.public_ip,
+        balHost: balRef.public_ip, bals: soulData.bals,
         balTenancy: balRef.tenancy
       })
     });
@@ -1969,28 +2201,42 @@ async function triggerRollback(produto) {
 }
 
 async function triggerTomcatRestart(produto) {
-  const targetEnv = window.lastUpdateEnv;
-  if (!targetEnv) {
-    showNotif("Nenhum ambiente de atualização detectado.", "err");
+  // Pega as máquinas selecionadas diretamente dos checkboxes (independente de atualização)
+  const selectedAll = soulData.soulMachines.filter((_, i) => {
+    const cb = document.getElementById(`soul-cb-${i}`);
+    return cb && cb.checked;
+  });
+
+  // Filtra APENAS máquinas de TST
+  const selected = selectedAll.filter(m => (m.ambiente || '').toUpperCase() === 'TST');
+
+  if (!selected.length) {
+    if (selectedAll.length > 0) {
+      showNotif('O restart de Tomcat é permitido apenas em ambiente TST. Selecione pelo menos uma máquina TST.', 'err');
+    } else {
+      showNotif('Selecione ao menos uma máquina SOUL (TST) para reiniciar o Tomcat.', 'warn');
+    }
     return;
   }
 
+  const balRef = soulData.bals[0];
+  if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
+    showNotif('Nenhum BAL com IP público disponível para conexão SSH.', 'err');
+    return;
+  }
+
+  const targetEnv = 'TST';
+  
   const confirmed = await showConfirmModal(
     `Atenção: Reiniciar Tomcat`,
-    `Deseja realmente <strong>REINICIAR</strong> o tomcat do produto <strong>${produto}</strong> no ambiente <strong>${targetEnv}</strong>?`
+    `Deseja realmente <strong>REINICIAR</strong> o tomcat do produto <strong>${produto}</strong> nas <strong>${selected.length}</strong> máquina(s) selecionadas no ambiente <strong>TST</strong>?`
   );
   if (!confirmed) return;
 
-  if (!window.lastTargetMachines || !window.lastBalRef) {
-    showNotif('Dados da sessão de atualização perdidos. Faça uma nova atualização antes de reiniciar.', 'err');
-    return;
-  }
-
-  const hostnames = window.lastTargetMachines.map(m => m.hostname);
-  const balRef = window.lastBalRef;
+  const hostnames = selected.map(m => m.hostname);
 
   // Abrir modal de progresso em tempo real
-  openRestartModal(produto, targetEnv);
+  openRestartModal(produto, 'TST');
 
   let hasError = false;
 
@@ -2002,7 +2248,7 @@ async function triggerTomcatRestart(produto) {
         hostnames,
         targetEnv,
         produto,
-        balHost: balRef.public_ip,
+        balHost: balRef.public_ip, bals: soulData.bals,
         balTenancy: balRef.tenancy
       })
     });
@@ -2033,6 +2279,26 @@ async function triggerTomcatRestart(produto) {
     }
 
     finalizeRestartModal(!hasError);
+
+    // Se o restart ocorreu com sucesso, atualiza a cor do botão correspondente para verde
+    if (!hasError) {
+      const safeId = produto.replace(/[^a-zA-Z0-9]/g, '-');
+      
+      const successStyle = (btn) => {
+        btn.style.background = 'rgba(34,211,160,0.15)';
+        btn.style.color = 'var(--success)';
+        btn.style.borderColor = 'rgba(34,211,160,0.4)';
+        btn.onmouseover = () => btn.style.background = 'rgba(34,211,160,0.35)';
+        btn.onmouseout = () => btn.style.background = 'rgba(34,211,160,0.15)';
+        btn.innerHTML = '✅ Restart Concluído';
+      };
+
+      const tableBtn = document.getElementById(`restart-${safeId}`);
+      if (tableBtn) successStyle(tableBtn);
+
+      const consoleBtn = document.getElementById(`console-restart-${safeId}`);
+      if (consoleBtn) successStyle(consoleBtn);
+    }
   } catch (err) {
     appendRestartLine(`❌ Erro crítico ao reiniciar: ${err.message}`);
     finalizeRestartModal(false);
@@ -2058,11 +2324,11 @@ async function checkSingleProductVersion(btn, produto) {
 
   const oldHtml = btn.innerHTML;
   btn.innerHTML = '⏳...';
-  btn.disabled = true;
+  disableAllActionBtns();
 
   try {
     const body = {
-      balHost: balRef.public_ip,
+      balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
@@ -2118,7 +2384,23 @@ async function checkSingleProductVersion(btn, produto) {
     // Re-render the table
     const wrap = document.getElementById('releasesTableWrap');
     if (wrap) {
+      // Save scroll positions and freeze height to prevent layout shift ("puxa pra baixo")
+      const windowScrollY = window.scrollY;
+      const mainContent = document.querySelector('.main-content');
+      const mainScroll = mainContent ? mainContent.scrollTop : 0;
+      const originalMinHeight = wrap.style.minHeight;
+      wrap.style.minHeight = wrap.offsetHeight + 'px';
+
       renderReleasesTable(wrap, window.lastReleasesResults, false);
+
+      // Restore positions immediately
+      window.scrollTo(0, windowScrollY);
+      if (mainContent) mainContent.scrollTop = mainScroll;
+      
+      // Restore minHeight after browser paints
+      setTimeout(() => {
+        if (wrap) wrap.style.minHeight = originalMinHeight;
+      }, 50);
     }
     
     showNotif(`Dados atualizados para ${produto}`, 'ok');
@@ -2128,8 +2410,8 @@ async function checkSingleProductVersion(btn, produto) {
   } finally {
     if (document.body.contains(btn)) {
       btn.innerHTML = oldHtml;
-      btn.disabled = false;
     }
+    enableAllActionBtns();
   }
 }
 

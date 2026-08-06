@@ -217,9 +217,33 @@ app.get('/api/clients', (req, res) => {
   res.json({ success: true, data: clients, count: clients.length });
 });
 
-// Endpoint para reiniciar o tomcat
+// Helper para isolar execução de comandos SSH via Heredoc
+function execSSHStep(client, command, onData) {
+  return new Promise((resolve, reject) => {
+    const fullCmd = `sudo su - << 'ENDSSH'\n${command}\nENDSSH\n`;
+    client.exec(fullCmd, (err, stream) => {
+      if (err) return reject(err);
+      let output = '';
+      stream.on('data', d => {
+        const chunk = d.toString();
+        output += chunk;
+        if (onData) onData(chunk);
+      });
+      stream.stderr.on('data', d => {
+        const chunk = d.toString();
+        output += chunk;
+        if (onData) onData(chunk);
+      });
+      stream.on('close', (code, signal) => {
+        resolve({ code, signal, output });
+      });
+    });
+  });
+}
+
+// Endpoint para reiniciar o tomcat (lógica: stop → cleanup → start → log)
 app.post('/api/restart-tomcat', async (req, res) => {
-  const { hostnames, targetEnv, produto, balHost, balTenancy } = req.body;
+  const { hostnames, targetEnv, produto, balHost, balTenancy, bals } = req.body;
 
   if (!hostnames || !hostnames.length || !targetEnv || !produto || !balHost || !balTenancy) {
     return res.status(400).json({ error: 'Missing parameters' });
@@ -227,9 +251,18 @@ app.post('/api/restart-tomcat', async (req, res) => {
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('X-Accel-Buffering', 'no');
 
   const onData = (chunk) => {
     res.write(chunk);
+  };
+
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0] };
   };
 
   const machines = inventory.filter(m => m.ambiente === targetEnv && hostnames.includes(m.hostname));
@@ -239,113 +272,21 @@ app.post('/api/restart-tomcat', async (req, res) => {
     return;
   }
 
-  const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
-
   for (const machine of machines) {
     res.write(`\n----------------------------------------\n`);
     res.write(`=== Conectando na máquina: ${machine.hostname} (${machine.ambiente}) ===\n`);
 
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
-
+    const mBal = getBalForEnv(machine.ambiente);
     const targetDir = getTargetDir(machine.ambiente);
     let cachedTomcat = tomcatCache[machine.ip] ? tomcatCache[machine.ip][produto] : null;
-
-    let findTomcatLogic;
-    if (cachedTomcat) {
-      findTomcatLogic = `
-tomcat_name="${cachedTomcat}"
-tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
-echo ">> [CACHE] Produto ${produto} mapeado no Tomcat: $tomcat_name (porta: $tomcat_port)"
-`;
-    } else {
-      findTomcatLogic = `
-xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
-if [ -z "$xml" ]; then
-  echo "❌ Produto ${produto} não encontrado no ambiente ${targetDir} da máquina ${machine.hostname}"
-  exit 1
-fi
-tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
-tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
-echo ">> Produto ${produto} pertence ao Tomcat: $tomcat_name (porta: $tomcat_port)"
-`;
-    }
-
-    // Comando para reiniciar o tomcat: kill -9 → status check → cleanup → start
-    const cmd = `sudo su - << 'ENDSSH'
-${findTomcatLogic}
-
-if [ -z "$tomcat_port" ]; then
-  echo "❌ Não foi possível determinar a porta do Tomcat para o produto ${produto}."
-  exit 1
-fi
-
-echo ""
-echo "=== [1/5] Buscando processo do Tomcat na porta $tomcat_port ==="
-PS_OUTPUT=$(ps aux | grep "[j]ava" | grep "$tomcat_port")
-echo "$PS_OUTPUT"
-
-TOM_PID=$(echo "$PS_OUTPUT" | awk '{print $2}' | head -1)
-
-if [ -z "$TOM_PID" ]; then
-  echo "⚠️  Nenhum processo Java encontrado na porta $tomcat_port. Verificando status..."
-else
-  echo ""
-  echo "=== [2/5] Matando processo PID $TOM_PID (kill -9) ==="
-  kill -9 "$TOM_PID"
-  echo "Aguardando 5 segundos para o SO liberar as portas e arquivos..."
-  sleep 5
-  if kill -0 "$TOM_PID" 2>/dev/null; then
-    echo "❌ Processo $TOM_PID ainda está vivo após kill -9. Abortando."
-    exit 1
-  fi
-  echo "✅ Processo $TOM_PID finalizado com sucesso."
-fi
-
-echo ""
-echo "=== [3/5] Verificando status via tomcatctl ==="
-STATUS_OUTPUT=$(tomcatctl status "$tomcat_port" 2>&1)
-echo "$STATUS_OUTPUT"
-
-if echo "$STATUS_OUTPUT" | grep -qiE "STRT|running|ativo"; then
-  echo "❌ Tomcat $tomcat_port ainda aparece RODANDO após kill -9. Abortando."
-  exit 1
-fi
-echo "✅ Tomcat $tomcat_port está PARADO. Prosseguindo com cleanup..."
-
-echo ""
-echo "=== [4/5] Executando: tomcatctl cleanup $tomcat_port ==="
-tomcatctl cleanup "$tomcat_port" 2>&1
-if [ $? -ne 0 ]; then
-  echo "❌ CLEANUP falhou para o Tomcat $tomcat_port — abortando."
-  exit 1
-fi
-echo "Aguardando 3 segundos após o cleanup..."
-sleep 3
-echo "✅ CLEANUP concluído."
-
-echo ""
-echo "=== [5/5] Executando: tomcatctl start $tomcat_port ==="
-tomcatctl start "$tomcat_port" 2>&1
-if [ $? -ne 0 ]; then
-  echo "❌ START falhou para o Tomcat $tomcat_port."
-  exit 1
-fi
-echo "Aguardando 5 segundos para a JVM inicializar..."
-sleep 5
-echo "✅ Tomcat $tomcat_port iniciado com sucesso na máquina ${machine.hostname}."
-echo ""
-echo "=== Restart concluído: ${machine.hostname} / porta $tomcat_port ==="
-ENDSSH
-    `;
-
-
-
-
 
     try {
       await new Promise((resolve, reject) => {
         let settled = false;
-        const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout general')); } }, 120000);
+        const timer = setTimeout(() => { 
+          if (!settled) { settled = true; reject(new Error('Timeout geral de 5 minutos excedido na máquina ' + machine.hostname)); } 
+        }, 300000);
 
         const jumpClient = new Client();
         jumpClient.on('ready', () => {
@@ -356,20 +297,89 @@ ENDSSH
               return;
             }
             const soulClient = new Client();
-            soulClient.on('ready', () => {
-              soulClient.exec(cmd, (err2, s) => {
-                if (err2) {
-                  clearTimeout(timer); soulClient.end(); jumpClient.end();
-                  if (!settled) { settled = true; reject(err2); }
-                  return;
+            soulClient.on('ready', async () => {
+              try {
+                // Etapa 0: Descobrir o ID/porta do Tomcat
+                let findTomcatCmd = '';
+                if (cachedTomcat) {
+                  findTomcatCmd = `tomcat_name="${cachedTomcat}"\ntomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')\necho "$tomcat_port"`;
+                } else {
+                  findTomcatCmd = `
+xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+if [ -z "$xml" ]; then exit 1; fi
+tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
+tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
+echo "$tomcat_port"
+`;
                 }
-                s.on('data', d => { if (onData) onData(d.toString()); });
-                s.stderr.on('data', d => { if (onData) onData(d.toString()); });
-                s.on('close', () => {
-                  clearTimeout(timer); soulClient.end(); jumpClient.end();
-                  if (!settled) { settled = true; resolve(); }
-                });
-              });
+                
+                let res0 = await execSSHStep(soulClient, findTomcatCmd);
+                if (res0.code !== 0 || !res0.output.trim()) {
+                   throw new Error(`Produto ${produto} não encontrado ou sem porta no ambiente ${targetDir}.`);
+                }
+                const outputLines = res0.output.trim().split('\n');
+                const tomcatId = outputLines[outputLines.length - 1].trim();
+                res.write(`✅ Tomcat encontrado: ID ${tomcatId}\n`);
+
+                // Etapa 1: STOP via tomcatctl
+                res.write(`\n=== [1/4] Executando: tomcatctl stop ${tomcatId} ===\n`);
+                let resStop = await execSSHStep(soulClient, `tomcatctl stop "${tomcatId}" 2>&1`, onData);
+                if (resStop.code !== 0) {
+                  res.write(`⚠️ tomcatctl stop retornou código ${resStop.code}, tentando kill -9 como fallback...\n`);
+                  const killCmd = `
+PS_OUTPUT=$(ps aux | grep "[j]ava" | grep "${tomcatId}")
+TOM_PID=$(echo "$PS_OUTPUT" | awk '{print $2}' | head -1)
+if [ -n "$TOM_PID" ]; then
+  echo "Matando processo PID $TOM_PID (kill -9)..."
+  kill -9 "$TOM_PID"
+  sleep 3
+  echo "✅ Processo $TOM_PID finalizado via kill -9."
+else
+  echo "⚠️ Nenhum processo Java encontrado para o tomcat ${tomcatId}."
+fi
+`;
+                  await execSSHStep(soulClient, killCmd, onData);
+                }
+
+                // Etapa 2: Verificar status (confirmar que parou)
+                res.write(`\n=== [2/4] Verificando status via tomcatctl ===\n`);
+                const statusCmd = `
+STATUS_OUTPUT=$(tomcatctl status "${tomcatId}" 2>&1)
+echo "$STATUS_OUTPUT"
+if echo "$STATUS_OUTPUT" | grep -qiE "STRT|running|ativo"; then exit 1; fi
+`;
+                let resStatus = await execSSHStep(soulClient, statusCmd, onData);
+                if (resStatus.code !== 0) throw new Error('Tomcat ainda aparece como RODANDO após o stop.');
+                res.write(`✅ Status verificado. Tomcat parado.\n`);
+
+                // Etapa 3: CLEANUP via tomcatctl
+                res.write(`\n=== [3/4] Executando: tomcatctl cleanup ${tomcatId} ===\n`);
+                let resCleanup = await execSSHStep(soulClient, `tomcatctl cleanup "${tomcatId}" 2>&1`, onData);
+                if (resCleanup.code !== 0) throw new Error('Comando cleanup falhou.');
+                res.write(`✅ CLEANUP concluído.\n`);
+
+                // Etapa 4: START via tomcatctl
+                res.write(`\n=== [4/4] Executando: tomcatctl start ${tomcatId} ===\n`);
+                let resStart = await execSSHStep(soulClient, `tomcatctl start "${tomcatId}" 2>&1`, onData);
+                if (resStart.code !== 0) throw new Error('Comando start falhou.');
+                res.write(`✅ START executado.\n`);
+
+                // Etapa Bônus: Capturar últimas linhas do log para confirmar inicialização
+                res.write(`\n=== Capturando últimos logs do catalina.out ===\n`);
+                const logCmd = `tail -n 50 /MV/servers/${targetDir}/tomcat${tomcatId}/logs/catalina.out 2>/dev/null || tail -n 50 /MV/servers/*/tomcat${tomcatId}/logs/catalina.out 2>/dev/null || echo "Log não encontrado."`;
+                await execSSHStep(soulClient, logCmd, onData);
+                
+                res.write(`\n=== Restart concluído: ${machine.hostname} / tomcat ${tomcatId} ===\n`);
+
+                clearTimeout(timer);
+                soulClient.end(); jumpClient.end();
+                if (!settled) { settled = true; resolve(); }
+              } catch (stepErr) {
+                res.write(`\n❌ Interrompido: ${stepErr.message}\n`);
+                clearTimeout(timer);
+                soulClient.end(); jumpClient.end();
+                if (!settled) { settled = true; resolve(); } 
+              }
             });
             soulClient.on('error', err3 => {
               clearTimeout(timer); jumpClient.end();
@@ -382,7 +392,7 @@ ENDSSH
           clearTimeout(timer);
           if (!settled) { settled = true; reject(err); }
         });
-        jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 6000 });
+        jumpClient.connect({ host: mBal.host, port: 22, username: SSH_USER, password: mBal.pass, readyTimeout: 6000 });
       });
     } catch (err) {
       res.write(`❌ Erro no restart via SSH: ${err.message}\n`);
@@ -514,8 +524,62 @@ EOF
 });
 
 // Endpoint para sincronização de Release (PRD -> TST)
+// ─── Check if a release already exists in TST ─────────────────────────────────
+app.post('/api/check-release-exists', async (req, res) => {
+  const { balHost, balTenancy, bals, tstMachine, produto, release } = req.body;
+  if (!tstMachine || !produto || !release) {
+    return res.status(400).json({ success: false, error: 'Faltam parâmetros' });
+  }
+
+  const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: balPassword };
+  };
+
+  const tstPwd = SSH_PASSWORDS[tstMachine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+  const mBal = getBalForEnv(tstMachine.ambiente);
+  const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+  const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "EXISTS"; else echo "NOT_EXISTS"; fi`;
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const jumpClient = new Client();
+      let settled = false;
+      const timer = setTimeout(() => { if (!settled) { settled = true; jumpClient.end(); reject(new Error('Timeout')); } }, 15000);
+      jumpClient.on('ready', () => {
+        jumpClient.forwardOut('127.0.0.1', 0, tstMachine.ip, 22, (err, stream) => {
+          if (err) { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(err); } return; }
+          const soulClient = new Client();
+          soulClient.on('ready', () => {
+            let out = '';
+            soulClient.exec(cmd, (err2, s) => {
+              if (err2) { clearTimeout(timer); soulClient.end(); jumpClient.end(); if (!settled) { settled = true; reject(err2); } return; }
+              s.on('data', d => { out += d.toString(); });
+              s.stderr.on('data', () => {});
+              s.on('close', () => { clearTimeout(timer); soulClient.end(); jumpClient.end(); if (!settled) { settled = true; resolve(out.trim()); } });
+            });
+          });
+          soulClient.on('error', e => { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(e); } });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: tstPwd, readyTimeout: 7500 });
+        });
+      });
+      jumpClient.on('error', err => { clearTimeout(timer); if (!settled) { settled = true; reject(err); } });
+      jumpClient.connect({ host: mBal.host, port: 22, username: SSH_USER, password: mBal.pass, readyTimeout: 6000 });
+    });
+
+    res.json({ success: true, exists: result.includes('EXISTS') });
+  } catch (e) {
+    res.json({ success: false, error: e.message, exists: false });
+  }
+});
+
 app.post('/api/sync-release', async (req, res) => {
-  const { produto, release, prdMachine, tstMachine, prdTomcat, tstTomcat, tstInstalledVer, balHost, balTenancy } = req.body;
+
+  const { produto, release, prdMachine, tstMachine, prdTomcat, tstTomcat, tstInstalledVer, balHost, balTenancy, bals, forceOverwrite } = req.body;
 
   if (!produto || !release || !prdMachine || !tstMachine || !prdTomcat || !tstTomcat) {
     return res.status(400).json({ error: 'Faltam parâmetros obrigatórios' });
@@ -539,8 +603,17 @@ app.post('/api/sync-release', async (req, res) => {
   let prdJumpClient, prdSoulClient;
   let tstJumpClient, tstSoulClient;
 
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: balPassword };
+  };
+
   // Helper para conectar
   const connectMachine = async (machine, password) => {
+    const mBal = getBalForEnv(machine.ambiente);
     return new Promise((resolve, reject) => {
       let settled = false;
       const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout connecting to ' + machine.hostname)); } }, 20000);
@@ -565,7 +638,7 @@ app.post('/api/sync-release', async (req, res) => {
         clearTimeout(timer);
         if (!settled) { settled = true; reject(err); }
       });
-      jumpClient.connect({ host: balHost, port: 22, username: SSH_USER, password: balPassword, readyTimeout: 6000 });
+      jumpClient.connect({ host: mBal.host, port: 22, username: SSH_USER, password: mBal.pass, readyTimeout: 6000 });
     });
   };
 
@@ -660,11 +733,20 @@ app.post('/api/sync-release', async (req, res) => {
 
     await execCmd(tstSoulClient, `sudo su -c "mkdir -p ${tstPath}"`, 'TST-MKDIR');
 
-    res.write(`   - Compactando ${prdPath}/forms\n`);
+    // Se o usuario confirmou sobrescrita, apaga a pasta forms antes de copiar
+    if (forceOverwrite) {
+      res.write(`   - Removendo pastas 'forms' e 'uploadfiles' antigas em TST (forceOverwrite)...\n`);
+      await execCmd(tstSoulClient, `sudo su -c "rm -rf ${tstPath}/forms ${tstPath}/uploadfiles"`, 'TST-RM-DIRS');
+      res.write(`   ✅ Pastas antigas removidas!\n`);
+    }
+
+    res.write(`   - Compactando 'forms' e 'uploadfiles' (se existir) de PRD\n`);
     res.write(`   - Extraindo em ${tstPath}\n`);
 
     await new Promise((resolve, reject) => {
-      prdSoulClient.exec(`sudo su -c "tar -czf - -C ${prdPath} forms"`, (err, prdStream) => {
+      // Lista condicionalmente forms e uploadfiles para empacotar, ignorando uploadfiles dentro de forms
+      const tarCmd = `sudo su -c "cd ${prdPath} && tar --exclude='forms/uploadfiles' -czf - \\$([ -d forms ] && echo forms) \\$([ -d uploadfiles ] && echo uploadfiles)"`;
+      prdSoulClient.exec(tarCmd, (err, prdStream) => {
         if (err) return reject(err);
 
         prdStream.stderr.on('data', d => {
@@ -692,7 +774,7 @@ app.post('/api/sync-release', async (req, res) => {
           prdStream.pipe(tstStream);
 
           tstStream.on('close', (code) => {
-            if (code !== 0 && !tstErr.includes('forms/')) reject(new Error(tstErr || 'Erro no tar TST'));
+            if (code !== 0 && !tstErr.includes('forms/') && !tstErr.includes('uploadfiles/')) reject(new Error(tstErr || 'Erro no tar TST'));
             else resolve();
           });
 
@@ -883,16 +965,23 @@ app.get('/api/soul-machines', async (req, res) => {
 
 // ─── Check Versions via SSH chain: BAL → SOUL ─────────────────────────────────
 app.post('/api/check-versions', async (req, res) => {
-  const { balHost, balTenancy, machines } = req.body;
+  const { balHost, balTenancy, machines, bals } = req.body;
   if (!balHost || !machines || !machines.length) {
     return res.status(400).json({ success: false, error: 'Missing balHost or machines' });
   }
 
-  const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+      return { host: bals[0].public_ip, pass: SSH_PASSWORDS[bals[0].tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0] };
+  };
 
   // Command is generated per machine in the loop based on its environment
 
-  function sshExec(host, password, cmd, timeout = 20000) {
+  function sshExec(host, password, cmd, timeout = 30000) {
     return new Promise((resolve, reject) => {
       const client = new Client();
       let output = '';
@@ -912,11 +1001,11 @@ app.post('/api/check-versions', async (req, res) => {
 
       client.on('error', err => { clearTimeout(timer); reject(err); });
 
-      client.connect({ host, port: 22, username: SSH_USER, password, readyTimeout: 6000 });
+      client.connect({ host, port: 22, username: SSH_USER, password, readyTimeout: 15000 });
     });
   }
 
-  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
+  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 35000) {
     return new Promise((resolve, reject) => {
       const jumpClient = new Client();
       let settled = false;
@@ -955,7 +1044,7 @@ app.post('/api/check-versions', async (req, res) => {
             if (!settled) { settled = true; reject(err3); }
           });
 
-          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 7500 });
+          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
         });
       });
 
@@ -1006,8 +1095,9 @@ for serverdir in /MV/servers/${targetDir}/; do
 done
     `.trim();
 
+    const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, dynamicCMD);
+      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, dynamicCMD);
       const tomcats = parseVersionOutput(raw);
 
       // Update cache
@@ -1031,12 +1121,19 @@ done
 
 // ─── Check Available Releases via SSH chain: BAL → APP Machine ────────────────
 app.post('/api/check-releases', async (req, res) => {
-  const { balHost, balTenancy, machines } = req.body;
+  const { balHost, balTenancy, machines, bals } = req.body;
   if (!balHost || !machines || !machines.length) {
     return res.status(400).json({ success: false, error: 'Missing balHost or machines' });
   }
 
-  const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+      return { host: bals[0].public_ip, pass: SSH_PASSWORDS[bals[0].tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0] };
+  };
 
   function buildReleasesCmd(ambiente) {
     // TST machines → soulmv_trn; PRD machines → soulmv_prd
@@ -1135,8 +1232,9 @@ fi
   for (const machine of machines) {
     const appPwd = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
     const CMD = buildReleasesCmd(machine.ambiente);
+    const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(balHost, balPassword, machine.ip, appPwd, CMD);
+      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, appPwd, CMD);
       const products = parseReleasesOutput(raw);
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, products });
     } catch (e) {
@@ -1149,7 +1247,7 @@ fi
 
 // ─── Update Version XML via SSH chain: BAL → APP Machine ──────────────────────
 app.post('/api/batch-update', async (req, res) => {
-  const { balHost, balTenancy, machines, updates } = req.body;
+  const { balHost, balTenancy, machines, updates, bals } = req.body;
   if (!balHost || !machines || !machines.length || !updates || !updates.length) {
     return res.status(400).send('Faltam parâmetros.');
   }
@@ -1162,6 +1260,14 @@ app.post('/api/batch-update', async (req, res) => {
   // Set headers for streaming
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
+
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: balPassword };
+  };
 
   function sshChainExecStream(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, onData, timeout = 15000) {
     return new Promise((resolve, reject) => {
@@ -1270,8 +1376,9 @@ done
   for (const machine of machines) {
     res.write(`\n=== Conectando na máquina: ${machine.hostname} (${machine.ambiente}) ===\n`);
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+    const mBal = getBalForEnv(machine.ambiente);
     try {
-      await sshChainExecStream(balHost, balPassword, machine.ip, soulPassword, CMD, (chunk) => {
+      await sshChainExecStream(mBal.host, mBal.pass, machine.ip, soulPassword, CMD, (chunk) => {
         res.write(chunk);
       });
       res.write(`=== Concluído na máquina: ${machine.hostname} ===\n`);
@@ -1287,7 +1394,7 @@ done
 
 // ─── Query Client DB Version via SSH + Oracle Direct Connect ───────────────
 app.post('/api/client-db-version', async (req, res) => {
-  const { balHost, balTenancy, machines } = req.body;
+  const { balHost, balTenancy, machines, bals } = req.body;
   if (!balHost || !machines || !machines.length) {
     return res.status(400).send('Faltam parâmetros.');
   }
@@ -1299,6 +1406,14 @@ app.post('/api/client-db-version', async (req, res) => {
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
+
+  const getBalForEnv = (env) => {
+    if (bals && bals.length) {
+      const b = bals.find(x => x.ambiente === env);
+      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+    }
+    return { host: balHost, pass: balPassword };
+  };
 
   // Same sshChainExec as check-versions (exact copy)
   function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
@@ -1438,8 +1553,9 @@ done
 echo "NOT_FOUND"
 `.trim();
 
+    const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, extractCmd);
+      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, extractCmd);
 
       if (raw.includes('NOT_FOUND') || !raw.trim()) {
         res.write(`⚠ Nenhum arquivo de configuração encontrado em ${machine.hostname}\n`);
