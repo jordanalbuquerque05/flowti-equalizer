@@ -83,9 +83,28 @@ function normalizeMachine(m) {
   };
 }
 
+
+function dedupMachines(machines) {
+  const map = new Map();
+  for (const m of machines) {
+    const key = m.hostname.toLowerCase();
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, m);
+    } else {
+      if (m.tenancy && !existing.tenancy) {
+        map.set(key, m);
+      } else if (m.sshPassword && !existing.sshPassword) {
+        map.set(key, m);
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+
 function getBALsFromInventory(codigoSearch) {
   const search = codigoSearch.trim().toLowerCase();
-  return inventory
+  const list = inventory
     .filter((m) => {
       if (!isBAL(m.hostname || '')) return false;
       const codigo = (m.codigo || '').toLowerCase().replace(/^0+/, '');
@@ -99,11 +118,12 @@ function getBALsFromInventory(codigoSearch) {
       );
     })
     .map(normalizeMachine);
+  return dedupMachines(list);
 }
 
 function getSOULsFromInventory(codigoSearch) {
   const search = codigoSearch.trim().toLowerCase();
-  return inventory
+  const list = inventory
     .filter((m) => {
       const h = (m.hostname || '').toUpperCase();
       const isApp = h.includes('SOUL') || h.includes('ERP') || h.includes('HOSP') || h.includes('-REPORT') || h.includes('PEP') || h.includes('INTEGRACAO');
@@ -116,6 +136,7 @@ function getSOULsFromInventory(codigoSearch) {
       );
     })
     .map(normalizeMachine);
+  return dedupMachines(list);
 }
 
 function getAllClientsFromInventory() {
