@@ -1360,8 +1360,10 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
     );
     if (!confirmed) return;
 
-    const consoleDiv = document.getElementById('updateConsole');
-    consoleDiv.style.display = 'block';
+    const consoleContainer = document.getElementById('updateConsoleContainer');
+  if (consoleContainer) consoleContainer.style.display = 'block';
+  const consoleDiv = document.getElementById('updateConsole');
+  consoleDiv.style.display = 'block';
     const header = document.createElement('div');
     header.style.color = '#6366f1';
     header.textContent = `[TROCA-VERSÃO] ${produto}: ${versaoAtual} → ${novaVersao} em ${machine.hostname}`;
@@ -1874,6 +1876,8 @@ async function batchUpdateVersions(targetEnv) {
   window.lastBalRef = balRef;
   
   if (btnTst) btnTst.disabled = true;
+  const consoleContainer = document.getElementById('updateConsoleContainer');
+  if (consoleContainer) consoleContainer.style.display = 'block';
   consoleDiv.style.display = 'block';
   consoleDiv.innerHTML = `<div>[${new Date().toLocaleTimeString()}] 🚀 Iniciando fluxo de atualização em lote no ambiente ${targetEnv}...</div>`;
 
@@ -1973,9 +1977,19 @@ async function batchUpdateVersions(targetEnv) {
     consoleDiv.scrollTop = consoleDiv.scrollHeight;
 
   } catch (e) {
-    showNotif(`Erro na requisição: ${e.message}`, 'err');
+    if (e.name === 'AbortError') {
+      const div = document.createElement('div');
+      div.style.color = '#f59e0b';
+      div.textContent = `[${new Date().toLocaleTimeString()}] ⚠️ PROCESSO CANCELADO!`;
+      consoleDiv.appendChild(div);
+    } else {
+      showNotif(`Erro na requisição: ${e.message}`, 'err');
+    }
   } finally {
     if (btnTst) btnTst.disabled = false;
+    const btnCancel = document.getElementById('btnCancelProcess');
+    if (btnCancel) btnCancel.style.display = 'none';
+    currentAbortController = null;
   }
 }
 
@@ -2072,6 +2086,8 @@ async function triggerSyncRelease(produto) {
     if (!confirmed) return;
   }
 
+  const consoleContainer = document.getElementById('updateConsoleContainer');
+  if (consoleContainer) consoleContainer.style.display = 'block';
   const consoleDiv = document.getElementById('updateConsole');
   consoleDiv.style.display = 'block';
   const div = document.createElement('div');
@@ -2121,10 +2137,21 @@ async function triggerSyncRelease(produto) {
       done = readerDone;
     }
   } catch (err) {
-    const errDiv = document.createElement('div');
-    errDiv.style.color = '#ff5555';
-    errDiv.textContent = `Erro crítico na sincronização: ${err.message}`;
-    consoleDiv.appendChild(errDiv);
+    if (err.name === 'AbortError') {
+      const div = document.createElement('div');
+      div.style.color = '#f59e0b';
+      div.textContent = `[${new Date().toLocaleTimeString()}] ⚠️ PROCESSO CANCELADO!`;
+      consoleDiv.appendChild(div);
+    } else {
+      const errDiv = document.createElement('div');
+      errDiv.style.color = '#ff5555';
+      errDiv.textContent = `Erro crítico na sincronização: ${err.message}`;
+      consoleDiv.appendChild(errDiv);
+    }
+  } finally {
+    const btnCancel = document.getElementById('btnCancelProcess');
+    if (btnCancel) btnCancel.style.display = 'none';
+    currentAbortController = null;
   }
 }
 
@@ -2142,6 +2169,8 @@ async function triggerRollback(produto) {
   );
   if (!confirmed) return;
   
+  const consoleContainer = document.getElementById('updateConsoleContainer');
+  if (consoleContainer) consoleContainer.style.display = 'block';
   const consoleDiv = document.getElementById('updateConsole');
   consoleDiv.style.display = 'block';
   
