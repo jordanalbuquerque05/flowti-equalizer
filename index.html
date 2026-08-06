@@ -1279,6 +1279,8 @@ function renderVersionTable(wrap, results) {
 
 // ─── Trocar Versão em TST ────────────────────────────────────────────────────
 async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
+  if (window.isProcessingAction) { showNotif('Aguarde a operação atual terminar.', 'warn'); return; }
+  window.isProcessingAction = true;
   const machine = typeof machineEncoded === 'string' ? JSON.parse(decodeURIComponent(machineEncoded)) : machineEncoded;
 
   const overlay = document.getElementById('swapVerModalOverlay');
@@ -1459,6 +1461,7 @@ async function runDbCheck() {
       })
     });
 
+    if (!response.ok) { const text = await response.text(); throw new Error(text); }
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let done = false;
@@ -1763,6 +1766,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
   `;
 }
 
+window.isProcessingAction = false;
 let _showingOnlyDivergentes = true;
 
 function applyReleasesFilter() {
@@ -1809,6 +1813,8 @@ function toggleDivergentes(btn) {
 }
 
 async function batchUpdateVersions(targetEnv) {
+  if (window.isProcessingAction) { showNotif('Aguarde a operação atual terminar.', 'warn'); return; }
+  window.isProcessingAction = true;
   const checkboxes = document.querySelectorAll('.update-product-cb:checked');
   const updates = [];
   checkboxes.forEach(cb => {
@@ -1896,6 +1902,7 @@ async function batchUpdateVersions(targetEnv) {
       body: JSON.stringify(body), signal: currentAbortController.signal
     });
 
+    if (!res.ok) { const text = await res.text(); throw new Error(text); }
     const reader = res.body.getReader();
     const decoder = new TextDecoder('utf-8');
 
@@ -1996,6 +2003,8 @@ async function batchUpdateVersions(targetEnv) {
 }
 
 async function triggerSyncRelease(produto) {
+  if (window.isProcessingAction) { showNotif('Aguarde a operação atual terminar.', 'warn'); return; }
+  window.isProcessingAction = true;
   const selected = soulData.soulMachines.filter((_, i) => {
     const cb = document.getElementById(`soul-cb-${i}`);
     return cb && cb.checked;
@@ -2116,6 +2125,7 @@ async function triggerSyncRelease(produto) {
       }), signal: currentAbortController.signal
     });
 
+    if (!response.ok) { const text = await response.text(); throw new Error(text); }
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let done = false;
@@ -2158,6 +2168,8 @@ async function triggerSyncRelease(produto) {
 }
 
 async function triggerRollback(produto) {
+  if (window.isProcessingAction) { showNotif('Aguarde a operação atual terminar.', 'warn'); return; }
+  window.isProcessingAction = true;
   const targetEnv = window.lastUpdateEnv;
   const backupPath = window.lastBackupPath;
   if (!targetEnv || !backupPath) {
@@ -2203,6 +2215,7 @@ async function triggerRollback(produto) {
       })
     });
 
+    if (!response.ok) { const text = await response.text(); throw new Error(text); }
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let done = false;
@@ -2237,6 +2250,8 @@ async function triggerRollback(produto) {
 }
 
 async function triggerTomcatRestart(produto) {
+  if (window.isProcessingAction) { showNotif('Aguarde a operação atual terminar.', 'warn'); return; }
+  window.isProcessingAction = true;
   // Pega as máquinas selecionadas diretamente dos checkboxes (independente de atualização)
   const selectedAll = soulData.soulMachines.filter((_, i) => {
     const cb = document.getElementById(`soul-cb-${i}`);
@@ -2289,6 +2304,7 @@ async function triggerTomcatRestart(produto) {
       })
     });
 
+    if (!response.ok) { const text = await response.text(); throw new Error(text); }
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let done = false;

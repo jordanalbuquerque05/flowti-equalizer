@@ -211,6 +211,23 @@ function getTargetDir(ambiente) {
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Trava global para prevenir acessos simultâneos a operações críticas
+let isServerProcessing = false;
+app.use('/api', (req, res, next) => {
+  const criticalRoutes = ['/batch-update', '/sync-release', '/rollback-tomcat', '/restart-tomcat', '/change-version'];
+  if (criticalRoutes.some(r => req.path.includes(r))) {
+    if (isServerProcessing) {
+      return res.status(429).json({ success: false, error: "Já existe uma operação crítica em andamento no servidor. Aguarde o término." });
+    }
+    isServerProcessing = true;
+    // Libera a trava quando a resposta for finalizada ou a conexão cair
+    res.on('finish', () => { isServerProcessing = false; });
+    res.on('close', () => { isServerProcessing = false; });
+  }
+  next();
+});
+
+
 // List all clients with at least one BAL
 app.get('/api/clients', (req, res) => {
   const clients = getAllClientsFromInventory();
