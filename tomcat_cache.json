@@ -545,5 +545,69 @@
     "soul-tiss-workspace": "tomcat8080",
     "report-designer": "tomcat8600",
     "report-executor": "tomcat8700"
-  }
+  },
+  "10.99.177.5": {
+    "mv": "tomcat8200",
+    "diagnostico-ws": "tomcat8208",
+    "mv_reports": "tomcat8210",
+    "mvpep": "tomcat8220",
+    "mveditor": "tomcat8230",
+    "cpoe-api": "tomcat8232",
+    "cpoe": "tomcat8232",
+    "soul-pagu-forms": "tomcat8241",
+    "soul-pagu-reports": "tomcat8241",
+    "soul-pagu-workspace": "tomcat8241",
+    "soul-service-global": "tomcat8245",
+    "mvpainel": "tomcat8246",
+    "mvsacr": "tomcat8246",
+    "mvtotemsenha": "tomcat8246",
+    "mvcontrolesala": "tomcat8247",
+    "soul-integrated-services": "tomcat8250",
+    "soul-mv": "tomcat8250",
+    "soul-product-forms": "tomcat8260",
+    "soul-product-workspace": "tomcat8260",
+    "soul-product-reports": "tomcat8261",
+    "soul-contratos-forms": "tomcat8280",
+    "soul-contratos-reports": "tomcat8280",
+    "soul-contratos-workspace": "tomcat8280",
+    "soul-integracao-forms": "tomcat8280",
+    "soul-integracao-workspace": "tomcat8280",
+    "soul-tiss-forms": "tomcat8280",
+    "soul-tiss-reports": "tomcat8280",
+    "soul-tiss-workspace": "tomcat8280",
+    "report-designer": "tomcat8620",
+    "report-executor": "tomcat8720"
+  },
+  "10.97.161.12": {
+    "soul-integrated-services": "tomcat8050",
+    "soul-mv": "tomcat8050",
+    "soul-product-forms": "tomcat8063",
+    "soul-product-workspace": "tomcat8063",
+    "soul-product-reports": "tomcat8062",
+    "soul-tiss-forms": "tomcat8080",
+    "soul-tiss-reports": "tomcat8080",
+    "soul-tiss-workspace": "tomcat8080"
+  },
+  "10.97.161.13": {
+    "soul-integrated-services": "tomcat8050",
+    "soul-mv": "tomcat8050",
+    "soul-product-forms": "tomcat8063",
+    "soul-product-workspace": "tomcat8063",
+    "soul-product-reports": "tomcat8062",
+    "soul-tiss-forms": "tomcat8080",
+    "soul-tiss-reports": "tomcat8080",
+    "soul-tiss-workspace": "tomcat8080"
+  },
+  "10.97.161.16": {
+    "report-designer": "tomcat8600",
+    "report-executor": "tomcat8700"
+  },
+  "10.97.161.17": {
+    "report-designer": "tomcat8600",
+    "report-executor": "tomcat8700"
+  },
+  "10.97.160.7": {},
+  "10.97.160.8": {},
+  "10.97.160.9": {},
+  "10.97.160.11": {}
 }

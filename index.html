@@ -43,10 +43,7 @@
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header>
     <div class="header-logo" style="display:flex; align-items:center; gap:10px;">
-      <div style="font-size: 26px; font-weight: 800; letter-spacing: -1.2px; line-height: 1;">
-         <span style="color: #ffffff;">flow</span><span style="color: var(--accent);">ti</span>
-      </div>
-      <div style="width: 2px; height: 22px; background: var(--border-bright); margin: 0 4px; border-radius: 2px;"></div>
+      <img src="assets/img/logo_flowti_branca.png" alt="Flowti Logo" class="logo-flowti" style="height:28px; width:auto; max-width:120px; display:block; flex-shrink:0;">
       <div>
         <div class="logo-text" style="font-size: 16px; font-weight: 500; color: var(--text-dim); letter-spacing: -0.3px;">Equalizer Ops</div>
       </div>
@@ -1751,7 +1748,15 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
       </table>
     </div>
     ${actionButtons}
-    <div id="updateConsole" style="display:none; margin-top:16px; background:#0d1117; color:#00ff00; font-family:'JetBrains Mono',monospace; font-size:12px; padding:12px; border-radius:4px; max-height:400px; overflow-y:auto; border:1px solid var(--border);">
+    <div id="updateConsoleContainer" style="display:none; margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+        <span style="font-size:12px; font-weight:600; color:var(--text-dim);">Logs da Operação</span>
+        <div style="display:flex; gap:8px;">
+          <button id="btnCancelProcess" onclick="cancelProcess()" style="display:none; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(239,68,68,0.15); color:var(--danger); border:1px solid rgba(239,68,68,0.4); border-radius:4px; transition:0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">⏹️ Cancelar Processo</button>
+          <button id="btnDownloadLog" onclick="downloadLog()" style="padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; background:rgba(139,92,246,0.15); color:var(--accent-2); border:1px solid rgba(139,92,246,0.4); border-radius:4px; transition:0.2s;" onmouseover="this.style.background='rgba(139,92,246,0.3)'" onmouseout="this.style.background='rgba(139,92,246,0.15)'">📥 Baixar Log</button>
+        </div>
+      </div>
+      <div id="updateConsole" style="background:#0d1117; color:#00ff00; font-family:'JetBrains Mono',monospace; font-size:12px; padding:12px; border-radius:4px; max-height:400px; overflow-y:auto; border:1px solid var(--border);"></div>
     </div>
   `;
 }
@@ -1880,10 +1885,10 @@ async function batchUpdateVersions(targetEnv) {
       updates
     };
 
-    const res = await fetch('/api/batch-update', {
+    currentAbortController = new AbortController(); const btnCancel = document.getElementById("btnCancelProcess"); if (btnCancel) btnCancel.style.display = "inline-block"; const res = await fetch('/api/batch-update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body), signal: currentAbortController.signal
     });
 
     const reader = res.body.getReader();
@@ -2076,7 +2081,7 @@ async function triggerSyncRelease(produto) {
   consoleDiv.scrollTop = consoleDiv.scrollHeight;
 
   try {
-    const response = await fetch('/api/sync-release', {
+    currentAbortController = new AbortController(); const btnCancel = document.getElementById("btnCancelProcess"); if (btnCancel) btnCancel.style.display = "inline-block"; const response = await fetch('/api/sync-release', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -2090,7 +2095,7 @@ async function triggerSyncRelease(produto) {
         balHost: balRef.public_ip, bals: soulData.bals,
         balTenancy: balRef.tenancy,
         forceOverwrite
-      })
+      }), signal: currentAbortController.signal
     });
 
     const reader = response.body.getReader();
@@ -2417,6 +2422,11 @@ async function checkSingleProductVersion(btn, produto) {
 
 
 // Ensure lastReleasesResult is cached in runReleasesCheck
+
+let currentAbortController = null;
+function cancelProcess() { if (currentAbortController) { currentAbortController.abort(); currentAbortController = null; showNotif('Processo cancelado pelo usuário!', 'warn'); } }
+function downloadLog() { const consoleDiv = document.getElementById('updateConsole'); if (!consoleDiv) return; const text = consoleDiv.innerText || consoleDiv.textContent; const blob = new Blob([text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `log_equalizador_${new Date().toISOString().replace(/[:.]/g, '-')}.txt`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+
 </script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+﻿
+server.js:245:app.post('/api/restart-tomcat', async (req, res) => {
+server.js:395:app.post('/api/rollback-tomcat', async (req, res) => {
+server.js:516:app.post('/api/check-release-exists', async (req, res) => {
+server.js:568:app.post('/api/sync-release', async (req, res) => {
+server.js:955:app.post('/api/check-versions', async (req, res) => {
+server.js:1111:app.post('/api/check-releases', async (req, res) => {
+server.js:1237:app.post('/api/batch-update', async (req, res) => {
+server.js:1384:app.post('/api/client-db-version', async (req, res) => {
+
+

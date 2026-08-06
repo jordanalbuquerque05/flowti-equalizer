@@ -1248,3 +1248,22 @@ header {
   font-size: 14px;
   color: var(--text-muted);
 }
+
+
+/* ── Logo Flowti ─────────────────────────────────────────────────────────── */
+.logo-flowti {
+  height: 28px;
+  width: auto;
+  max-width: 120px;
+  max-height: 28px;
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+  animation: logo-glow 2s infinite alternate ease-in-out;
+}
+@keyframes logo-glow {
+  0%   { filter: drop-shadow(0 0 3px rgba(255,255,255,0.3)) drop-shadow(0 0 6px rgba(180,180,255,0.2)); }
+  100% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)) drop-shadow(0 0 20px rgba(200,200,255,0.6)) drop-shadow(0 0 35px rgba(150,150,255,0.3)); }
+}
+  100% { filter: drop-shadow(0 0 6px rgba(255,255,255,0.45)); }
+}

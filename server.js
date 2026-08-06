@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const { Client } = require('ssh2');
@@ -587,6 +587,8 @@ app.post('/api/sync-release', async (req, res) => {
 
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
+  let isCancelled = false;
+  req.on('close', () => { isCancelled = true; });
 
   const balPassword = SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0];
   const prdPassword = SSH_PASSWORDS[prdMachine.tenancy] || Object.values(SSH_PASSWORDS)[0];
@@ -644,6 +646,7 @@ app.post('/api/sync-release', async (req, res) => {
 
   try {
     res.write(`>> [1/4] Conectando nos servidores PRD e TST simultaneamente...\n`);
+    if (isCancelled) { res.write(`\n⚠️ Processo cancelado pelo usuário!\n`); res.end(); return; }
     const [prdConn, tstConn] = await Promise.all([
       connectMachine(prdMachine, prdPassword),
       connectMachine(tstMachine, tstPassword)
@@ -1260,6 +1263,8 @@ app.post('/api/batch-update', async (req, res) => {
   // Set headers for streaming
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Transfer-Encoding', 'chunked');
+  let isCancelled = false;
+  req.on('close', () => { isCancelled = true; });
 
   const getBalForEnv = (env) => {
     if (bals && bals.length) {
@@ -1901,3 +1906,6 @@ server.listen(PORT, '0.0.0.0', () => {
   // Try DB in background
   getDB().catch(() => { });
 });
+
+
+

@@ -1,0 +1,86 @@
+﻿
+> server.js:523:  const getBalForEnv = (env) => {
+  server.js:524:    if (bals && bals.length) {
+  server.js:525:      const b = bals.find(x => x.ambiente === env);
+  server.js:526:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:527:    }
+  server.js:528:    return { host: balHost, pass: balPassword };
+> server.js:532:  const mBal = getBalForEnv(tstMachine.ambiente);
+  server.js:533:  const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+  server.js:534:  const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "EXISTS"; 
+else echo "NOT_EXISTS"; fi`;
+  server.js:535:
+  server.js:536:  try {
+  server.js:537:    const result = await new Promise((resolve, reject) => {
+> server.js:594:  const getBalForEnv = (env) => {
+  server.js:595:    if (bals && bals.length) {
+  server.js:596:      const b = bals.find(x => x.ambiente === env);
+  server.js:597:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:598:    }
+  server.js:599:    return { host: balHost, pass: balPassword };
+> server.js:604:    const mBal = getBalForEnv(machine.ambiente);
+  server.js:605:    return new Promise((resolve, reject) => {
+  server.js:606:      let settled = false;
+  server.js:607:      const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout 
+connecting to ' + machine.hostname)); } }, 20000);
+  server.js:608:
+  server.js:609:      const jumpClient = new Client();
+> server.js:961:  const getBalForEnv = (env) => {
+  server.js:962:    if (bals && bals.length) {
+  server.js:963:      const b = bals.find(x => x.ambiente === env);
+  server.js:964:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:965:      return { host: bals[0].public_ip, pass: SSH_PASSWORDS[bals[0].tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:966:    }
+> server.js:1086:    const mBal = getBalForEnv(machine.ambiente);
+  server.js:1087:    try {
+  server.js:1088:      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, dynamicCMD);
+  server.js:1089:      const tomcats = parseVersionOutput(raw);
+  server.js:1090:
+  server.js:1091:      // Update cache
+> server.js:1117:  const getBalForEnv = (env) => {
+  server.js:1118:    if (bals && bals.length) {
+  server.js:1119:      const b = bals.find(x => x.ambiente === env);
+  server.js:1120:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:1121:      return { host: bals[0].public_ip, pass: SSH_PASSWORDS[bals[0].tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:1122:    }
+> server.js:1223:    const mBal = getBalForEnv(machine.ambiente);
+  server.js:1224:    try {
+  server.js:1225:      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, appPwd, CMD);
+  server.js:1226:      const products = parseReleasesOutput(raw);
+  server.js:1227:      results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: 
+true, products });
+  server.js:1228:    } catch (e) {
+> server.js:1252:  const getBalForEnv = (env) => {
+  server.js:1253:    if (bals && bals.length) {
+  server.js:1254:      const b = bals.find(x => x.ambiente === env);
+  server.js:1255:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:1256:    }
+  server.js:1257:    return { host: balHost, pass: balPassword };
+> server.js:1367:    const mBal = getBalForEnv(machine.ambiente);
+  server.js:1368:    try {
+  server.js:1369:      await sshChainExecStream(mBal.host, mBal.pass, machine.ip, soulPassword, CMD, (chunk) => {
+  server.js:1370:        res.write(chunk);
+  server.js:1371:      });
+  server.js:1372:      res.write(`=== Concluído na máquina: ${machine.hostname} ===\n`);
+> server.js:1398:  const getBalForEnv = (env) => {
+  server.js:1399:    if (bals && bals.length) {
+  server.js:1400:      const b = bals.find(x => x.ambiente === env);
+  server.js:1401:      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || 
+Object.values(SSH_PASSWORDS)[0] };
+  server.js:1402:    }
+  server.js:1403:    return { host: balHost, pass: balPassword };
+> server.js:1544:    const mBal = getBalForEnv(machine.ambiente);
+  server.js:1545:    try {
+  server.js:1546:      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, extractCmd);
+  server.js:1547:
+  server.js:1548:      if (raw.includes('NOT_FOUND') || !raw.trim()) {
+  server.js:1549:        res.write(`⚠ Nenhum arquivo de configuração encontrado em ${machine.hostname}\n`);
+
+
