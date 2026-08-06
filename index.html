@@ -1040,10 +1040,15 @@ async function runFullCheck() {
       }
     }
 
+    const failedMachines = data.results.filter(r => !r.success).map(r => r.hostname);
     if (missingOrError) {
-       tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-         <span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
-         <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s;">StartTstOps</a>
+       const failListHtml = failedMachines.length > 0 ? `<div style="margin-top:8px; font-size:12px; color:#ff5555; background:rgba(255,85,85,0.1); padding:8px; border-radius:4px; border:1px solid rgba(255,85,85,0.3);"><strong>Máquinas offline:</strong> ${failedMachines.join(', ')}</div>` : '';
+       tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+         <div style="flex:1;">
+           <span style="font-weight:600;">⚠️ Houve erro ao conectar em algumas máquinas (verifique se estão ligadas).</span>
+           ${failListHtml}
+         </div>
+         <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s; white-space:nowrap;">StartTstOps</a>
        </div>`;
     } else if (mismatchedProducts.length > 0) {
        tableWrap.innerHTML = `
