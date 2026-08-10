@@ -151,6 +151,25 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Seleção de Máquina -->
+<div id="machineSelectModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:var(--bg-card); border:1px solid var(--border-bright); border-radius:var(--radius-lg); width:420px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:hidden; animation:modal-pop 0.2s ease-out;">
+    <div style="padding:20px; border-bottom:1px solid rgba(255,255,255,0.05);">
+      <h3 id="machineSelectModalTitle" style="color:var(--text-primary); font-size:16px; font-weight:600; margin:0;">Selecione a Máquina</h3>
+    </div>
+    <div style="padding:20px;">
+      <p style="color:var(--text-dim); font-size:13px; margin-top:0; margin-bottom:12px;">Há mais de uma máquina TST selecionada. Escolha para qual deseja copiar a release do PRD:</p>
+      <select id="machineSelectDropdown" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; font-family:'JetBrains Mono', monospace;">
+      </select>
+    </div>
+    <div style="padding:16px 20px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255,255,255,0.05);">
+      <button id="machineSelectBtnCancel" style="padding:8px 16px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--text-primary); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Cancelar</button>
+      <button id="machineSelectBtnOk" style="padding:8px 24px; border-radius:6px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px var(--accent-glow); transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 16px var(--accent-glow)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 12px var(--accent-glow)'">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <style>
 @keyframes modal-pop {
   0% { opacity: 0; transform: scale(0.95); }
@@ -316,6 +335,42 @@ function showConfirmModal(title, message) {
     btnCancel.onclick = () => { cleanup(); resolve(false); };
   });
 }
+
+function showMachineSelectModal(title, machines) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('machineSelectModalOverlay');
+    const titleEl = document.getElementById('machineSelectModalTitle');
+    const selectEl = document.getElementById('machineSelectDropdown');
+    const btnCancel = document.getElementById('machineSelectBtnCancel');
+    const btnOk = document.getElementById('machineSelectBtnOk');
+
+    titleEl.textContent = title;
+    
+    selectEl.innerHTML = '';
+    machines.forEach((m, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = `${m.hostname} (${m.ip})`;
+      selectEl.appendChild(opt);
+    });
+
+    overlay.style.display = 'flex';
+
+    function cleanup() {
+      overlay.style.display = 'none';
+      btnOk.onclick = null;
+      btnCancel.onclick = null;
+    }
+
+    btnOk.onclick = () => { 
+      const idx = selectEl.value;
+      cleanup(); 
+      resolve(machines[idx]); 
+    };
+    btnCancel.onclick = () => { cleanup(); resolve(null); };
+  });
+}
+
 // ─── State ──────────────────────────────────────────────────────────────────
 const state = {
   clients: [],
@@ -1586,9 +1641,9 @@ async function runDbCheck() {
       }
       done = readerDone;
     }
-    consoleDiv.appendChild(document.createTextNode('\\n[FIM DA CONSULTA]'));
+    consoleDiv.appendChild(document.createTextNode('\n[FIM DA CONSULTA]'));
   } catch (err) {
-    consoleDiv.innerHTML += `\\n<span style="color:#bf616a">Erro na requisição: ${err.message}</span>`;
+    consoleDiv.innerHTML += `\n<span style="color:#bf616a">Erro na requisição: ${err.message}</span>`;
   } finally {
     enableAllActionBtns();
     btn.innerHTML = oldBtnHtml;
@@ -1706,7 +1761,7 @@ function renderReleasesTable(wrap, results, isReadOnly = true) {
     let prdInstalledVer = null;
     if (window.lastVersionMap) {
       const prdKey = Object.keys(window.lastVersionMap).find(k => (window.lastVersionMap[k]?.ambiente || k).toUpperCase().includes('PRD') || results.find(r => r.hostname === k && (r.ambiente||'').toUpperCase().includes('PRD')));
-      if (prdKey && window.lastVersionMap[prdKey]?.produtos?.[produto]?.length) {
+      if (prdKey && window.lastVersionMap[prdKey].produtos?.[produto]?.length) {
         prdInstalledVer = window.lastVersionMap[prdKey].produtos[produto][0].versao;
       }
     }
@@ -2127,11 +2182,21 @@ async function triggerSyncRelease(produto) {
   }
 
   const prdMachine = selected.find(m => (m.ambiente||'').toUpperCase().includes('PRD'));
-  const tstMachine = selected.find(m => !(m.ambiente||'').toUpperCase().includes('PRD'));
+  const tstMachines = selected.filter(m => !(m.ambiente||'').toUpperCase().includes('PRD'));
 
-  if (!prdMachine || !tstMachine) {
+  if (!prdMachine || tstMachines.length === 0) {
     showNotif("É necessário ter pelo menos uma máquina PRD e uma máquina TST selecionadas.", "err");
+    window.isProcessingAction = false;
     return;
+  }
+
+  let tstMachine = tstMachines[0];
+  if (tstMachines.length > 1) {
+    tstMachine = await showMachineSelectModal("Selecione a máquina TST", tstMachines);
+    if (!tstMachine) {
+      window.isProcessingAction = false;
+      return;
+    }
   }
 
   let prdInstalledVer = null;
