@@ -196,7 +196,7 @@
       </div>
     </div>
     <div style="padding:16px 20px; background:rgba(0,0,0,0.2); display:flex; justify-content:flex-end; gap:12px; border-top:1px solid rgba(255,255,255,0.05);">
-      <button id="swapVerCancelBtn" onclick="document.getElementById('swapVerModalOverlay').style.display='none'" style="padding:8px 16px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--text-primary); cursor:pointer; font-size:13px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Cancelar</button>
+      <button id="swapVerCancelBtn" onclick="document.getElementById('swapVerModalOverlay').style.display='none'; window.isProcessingAction = false;" style="padding:8px 16px; border-radius:6px; background:transparent; border:1px solid var(--border); color:var(--text-primary); cursor:pointer; font-size:13px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Cancelar</button>
       <button id="swapVerOkBtn" style="padding:8px 24px; border-radius:6px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-size:13px; font-weight:600; box-shadow:0 4px 12px var(--accent-glow);" disabled>Trocar Versão</button>
     </div>
   </div>
@@ -1672,6 +1672,8 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
       errDiv.style.color = '#ff5555';
       errDiv.textContent = `Erro ao trocar versão: ${err.message}`;
       consoleDiv.appendChild(errDiv);
+    } finally {
+      window.isProcessingAction = false;
     }
   };
 }
@@ -2337,6 +2339,7 @@ async function batchUpdateVersions(targetEnv) {
     const btnCancel = document.getElementById('btnCancelProcess');
     if (btnCancel) btnCancel.style.display = 'none';
     currentAbortController = null;
+    window.isProcessingAction = false;
   }
 }
 
@@ -2542,6 +2545,7 @@ async function triggerSyncRelease(produto) {
     const btnCancel = document.getElementById('btnCancelProcess');
     if (btnCancel) btnCancel.style.display = 'none';
     currentAbortController = null;
+    window.isProcessingAction = false;
   }
 }
 
@@ -2624,6 +2628,8 @@ async function triggerRollback(produto) {
     errDiv.style.color = '#ff5555';
     errDiv.textContent = `Erro crítico no rollback: ${err.message}`;
     consoleDiv.appendChild(errDiv);
+  } finally {
+    window.isProcessingAction = false;
   }
 }
 
@@ -2645,12 +2651,14 @@ async function triggerTomcatRestart(produto) {
     } else {
       showNotif('Selecione ao menos uma máquina SOUL (TST) para reiniciar o Tomcat.', 'warn');
     }
+    window.isProcessingAction = false;
     return;
   }
 
   const balRef = getBestBalForMachines(typeof selected !== "undefined" ? selected : []);
   if (!balRef || !balRef.public_ip || balRef.public_ip === '---') {
     showNotif('Nenhum BAL com IP público disponível para conexão SSH.', 'err');
+    window.isProcessingAction = false;
     return;
   }
 
@@ -2732,6 +2740,8 @@ async function triggerTomcatRestart(produto) {
   } catch (err) {
     appendRestartLine(`❌ Erro crítico ao reiniciar: ${err.message}`);
     finalizeRestartModal(false);
+  } finally {
+    window.isProcessingAction = false;
   }
 }
 
@@ -2890,6 +2900,7 @@ async function checkSingleProductVersion(btn, produto) {
     }
     enableAllActionBtns();
     hideGlobalLoadingOverlay();
+    window.isProcessingAction = false;
   }
 }
 
