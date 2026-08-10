@@ -731,38 +731,16 @@ app.post('/api/check-release-exists', async (req, res) => {
     return { host: balHost, pass: balPassword };
   };
 
-  const tstPwd = SSH_PASSWORDS[tstMachine.tenancy] || Object.values(SSH_PASSWORDS)[0];
-  const mBal = getBalForEnv(tstMachine.ambiente);
   const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
   const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "EXISTS"; else echo "NOT_EXISTS"; fi`;
 
   try {
-    const result = await new Promise((resolve, reject) => {
-      const jumpClient = new Client();
-      let settled = false;
-      const timer = setTimeout(() => { if (!settled) { settled = true; jumpClient.end(); reject(new Error('Timeout')); } }, 15000);
-      jumpClient.on('ready', () => {
-        jumpClient.forwardOut('127.0.0.1', 0, tstMachine.ip, 22, (err, stream) => {
-          if (err) { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(err); } return; }
-          const soulClient = new Client();
-          soulClient.on('ready', () => {
-            let out = '';
-            soulClient.exec(cmd, (err2, s) => {
-              if (err2) { clearTimeout(timer); soulClient.end(); jumpClient.end(); if (!settled) { settled = true; reject(err2); } return; }
-              s.on('data', d => { out += d.toString(); });
-              s.stderr.on('data', () => {});
-              s.on('close', () => { clearTimeout(timer); soulClient.end(); jumpClient.end(); if (!settled) { settled = true; resolve(out.trim()); } });
-            });
-          });
-          soulClient.on('error', e => { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(e); } });
-          soulClient.connect({ sock: stream, username: SSH_USER, password: tstPwd, readyTimeout: 7500 });
-        });
-      });
-      jumpClient.on('error', err => { clearTimeout(timer); if (!settled) { settled = true; reject(err); } });
-      jumpClient.connect({ host: mBal.host, port: 22, username: SSH_USER, password: mBal.pass, readyTimeout: 6000 });
+    const output = await executeWithBalFallback({
+      bals, balHost, balTenancy,
+      targetMachine: tstMachine,
+      cmd, isStream: false, timeout: 25000
     });
-
-    res.json({ success: true, exists: result.includes('EXISTS') });
+    res.json({ success: true, exists: output.includes('EXISTS') });
   } catch (e) {
     res.json({ success: false, error: e.message, exists: false });
   }
@@ -796,51 +774,70 @@ app.post('/api/sync-release', async (req, res) => {
   let prdJumpClient, prdSoulClient;
   let tstJumpClient, tstSoulClient;
 
-  const getBalForEnv = (env) => {
-    if (bals && bals.length) {
-      const b = bals.find(x => x.ambiente === env);
-      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
+  // Helper para conectar com fallback nos balancers
+  const connectMachine = async (machine) => {
+    let availableBals = (bals || []).filter(b => b.public_ip && b.public_ip !== '---');
+    if (availableBals.length === 0) availableBals = [{ public_ip: balHost, ip: '0.0.0.0', tenancy: balTenancy }];
+    const sortedBals = sortBalsBySubnet(availableBals, machine.ip);
+
+    let lastErr;
+    const allPasswords = Object.values(SSH_PASSWORDS).filter(Boolean);
+    const machinePass = machine.sshPassword || machine.senha || '';
+    const uniquePasswords = [...new Set([machinePass, ...allPasswords].filter(Boolean))];
+
+    for (let i = 0; i < sortedBals.length; i++) {
+      const b = sortedBals[i];
+      const balPwd = (b.tenancy ? SSH_PASSWORDS[b.tenancy] : '') || b.sshPassword || b.senha || Object.values(SSH_PASSWORDS)[0];
+      
+      for (let p = 0; p < uniquePasswords.length; p++) {
+        const soulPwd = uniquePasswords[p];
+        try {
+          return await new Promise((resolve, reject) => {
+            let settled = false;
+            const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout na conexão')); } }, 20000);
+
+            const jumpClient = new Client();
+            jumpClient.on('ready', () => {
+              jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
+                if (err) { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(err); } return; }
+                const soulClient = new Client();
+                soulClient.on('ready', () => {
+                  clearTimeout(timer);
+                  if (!settled) { settled = true; resolve({ jumpClient, soulClient }); }
+                });
+                soulClient.on('error', err3 => {
+                  clearTimeout(timer); jumpClient.end();
+                  if (!settled) { settled = true; reject(err3); }
+                });
+                soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
+              });
+            });
+            jumpClient.on('error', err => {
+              clearTimeout(timer);
+              if (!settled) { settled = true; reject(err); }
+            });
+            jumpClient.connect({ host: b.public_ip, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 15000 });
+          });
+        } catch (err) {
+          lastErr = err;
+          const isAuthFail = err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('auth');
+          if (isAuthFail && p < uniquePasswords.length - 1) continue; // Try next password
+          if (isAuthFail) break; // If all passwords fail, move to next balancer
+          // Network issue, break password loop and try next balancer
+          res.write(`\n⚠ Fallback de conexão: Falhou no BAL ${b.public_ip} para ${machine.hostname} (${err.message}). Tentando próximo...\n`);
+          break;
+        }
+      }
     }
-    return { host: balHost, pass: balPassword };
-  };
-
-  // Helper para conectar
-  const connectMachine = async (machine, password) => {
-    const mBal = getBalForEnv(machine.ambiente);
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('Timeout connecting to ' + machine.hostname)); } }, 20000);
-
-      const jumpClient = new Client();
-      jumpClient.on('ready', () => {
-        jumpClient.forwardOut('127.0.0.1', 0, machine.ip, 22, (err, stream) => {
-          if (err) { clearTimeout(timer); jumpClient.end(); if (!settled) { settled = true; reject(err); } return; }
-          const soulClient = new Client();
-          soulClient.on('ready', () => {
-            clearTimeout(timer);
-            if (!settled) { settled = true; resolve({ jumpClient, soulClient }); }
-          });
-          soulClient.on('error', err3 => {
-            clearTimeout(timer); jumpClient.end();
-            if (!settled) { settled = true; reject(err3); }
-          });
-          soulClient.connect({ sock: stream, username: SSH_USER, password: password, readyTimeout: 7500 });
-        });
-      });
-      jumpClient.on('error', err => {
-        clearTimeout(timer);
-        if (!settled) { settled = true; reject(err); }
-      });
-      jumpClient.connect({ host: mBal.host, port: 22, username: SSH_USER, password: mBal.pass, readyTimeout: 6000 });
-    });
+    throw lastErr || new Error('Nenhum BAL disponivel conectou.');
   };
 
   try {
     res.write(`>> [1/4] Conectando nos servidores PRD e TST simultaneamente...\n`);
     if (isCancelled) { res.write(`\n⚠️ Processo cancelado pelo usuário!\n`); res.end(); return; }
     const [prdConn, tstConn] = await Promise.all([
-      connectMachine(prdMachine, prdPassword),
-      connectMachine(tstMachine, tstPassword)
+      connectMachine(prdMachine),
+      connectMachine(tstMachine)
     ]);
 
     prdJumpClient = prdConn.jumpClient; prdSoulClient = prdConn.soulClient;
