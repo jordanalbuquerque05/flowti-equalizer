@@ -996,6 +996,10 @@ async function runFullCheck() {
     line.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${msg}`;
     progress.appendChild(line);
     progress.scrollTop = progress.scrollHeight;
+    
+    // Atualiza também o texto no modal
+    const modalDesc = document.getElementById('modalDescText');
+    if (modalDesc) modalDesc.textContent = msg;
   }
 
   logProgress(`Iniciando verificação completa em ${selected.length} máquina(s)...`);
