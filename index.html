@@ -1004,7 +1004,7 @@ async function runFullCheck() {
     const body = {
       balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
-      machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
+      machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy, sshPassword: m.sshPassword || '' }))
     };
 
     const res = await fetch('/api/check-versions', {
@@ -1012,14 +1012,58 @@ async function runFullCheck() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
 
-    // Removido renderVersionTable para não jogar a tela pra baixo
+    // Lê streaming NDJSON linha a linha
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const allResults = [];
+    let totalMachines = selected.length;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // última linha pode estar incompleta
+      
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          
+          if (event.type === 'start') {
+            totalMachines = event.total;
+            logProgress(`📡 Servidor iniciou processamento de ${totalMachines} máquina(s)...`);
+          } else if (event.type === 'progress') {
+            logProgress(`🔌 Conectando em ${event.hostname} (${event.ip})...`);
+          } else if (event.type === 'result') {
+            const pct = Math.round((event.completed / totalMachines) * 100);
+            if (progressText) progressText.textContent = pct + '%';
+            if (progressBar) progressBar.style.width = pct + '%';
+            clearInterval(window.fullCheckProgressInterval);
+            
+            if (event.success) {
+              const prodCount = Object.values(event.tomcats || {}).reduce((s, a) => s + a.length, 0);
+              logProgress(`✅ ${event.hostname} (${event.ip}) — ${prodCount} produto(s) encontrado(s) [${event.completed}/${totalMachines}]`);
+            } else {
+              logProgress(`❌ ${event.hostname} (${event.ip}) — Falha: ${event.error} [${event.completed}/${totalMachines}]`);
+            }
+            allResults.push(event);
+          } else if (event.type === 'done') {
+            logProgress(`🏁 Verificação finalizada.`);
+          }
+        } catch(_) {}
+      }
+    }
+
+    // Processa resultados da mesma forma que antes
+    const data = { success: true, results: allResults };
 
     let missingOrError = false;
     const machineMap = {};
-    window.lastVersionMap = {}; // Salva pra caso precisarmos depois
+    window.lastVersionMap = {};
     
     for (const r of data.results) {
       if (!r.success) missingOrError = true;
@@ -1037,9 +1081,8 @@ async function runFullCheck() {
     }
 
     const prdMachine = data.results.find(r => (r.ambiente||'').toUpperCase().includes('PRD'));
-    const refHostname = prdMachine ? prdMachine.hostname : data.results[0].hostname;
+    const refHostname = prdMachine ? prdMachine.hostname : data.results[0]?.hostname;
 
-    // Apenas produtos do servidor de referência
     const prdProducts = new Set(Object.keys(machineMap[refHostname]?.produtos || {}));
 
     const mismatchedProducts = [];
@@ -1120,6 +1163,7 @@ async function runFullCheck() {
   }
 }
 
+
 function clearOtherPanels(current) {
   if (current !== 'version') {
     const wrap = document.getElementById('versionTableWrap');
@@ -1180,23 +1224,55 @@ async function runVersionCheck() {
     const body = {
       balHost: balRef.public_ip, bals: soulData.bals,
       balTenancy: balRef.tenancy,
-      machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
+      machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy, sshPassword: m.sshPassword || '' }))
     };
-
-    for (const m of selected) {
-      logProgress(`🔄 Conectando: ${m.hostname} (${m.ip}) via ${balRef.public_ip}...`);
-    }
 
     const res = await fetch('/api/check-versions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    const data = await res.json();
 
-    if (!data.success) throw new Error(data.error);
+    // Lê streaming NDJSON linha a linha
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const allResults = [];
+    let totalMachines = selected.length;
 
-    logProgress(`✅ Verificação concluída em ${data.results.length} máquina(s).`);
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          if (event.type === 'start') {
+            totalMachines = event.total;
+            logProgress(`📡 Processando ${totalMachines} máquina(s)...`);
+          } else if (event.type === 'progress') {
+            logProgress(`🔌 Conectando em ${event.hostname} (${event.ip})...`);
+          } else if (event.type === 'result') {
+            if (event.success) {
+              const prodCount = Object.values(event.tomcats || {}).reduce((s, a) => s + a.length, 0);
+              logProgress(`✅ ${event.hostname} (${event.ip}) — ${prodCount} produto(s) [${event.completed}/${totalMachines}]`);
+            } else {
+              logProgress(`❌ ${event.hostname} (${event.ip}) — ${event.error} [${event.completed}/${totalMachines}]`);
+            }
+            allResults.push(event);
+          } else if (event.type === 'done') {
+            logProgress(`🏁 Verificação finalizada.`);
+          }
+        } catch(_) {}
+      }
+    }
+
+    const data = { success: true, results: allResults };
     
     const hasError = data.results.some(r => !r.success);
     if (hasError) {
@@ -1210,7 +1286,6 @@ async function runVersionCheck() {
       <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s;">StartTstOps</a>`;
       tableWrap.appendChild(errorMsg);
       
-      // Render table in a wrapper so we don't overwrite the errorMsg
       const tableInner = document.createElement('div');
       tableWrap.appendChild(tableInner);
       renderVersionTable(tableInner, data.results);
@@ -1225,6 +1300,7 @@ async function runVersionCheck() {
     btn.innerHTML = `<span>⚡</span> Verificar Versões`;
   }
 }
+
 
 function renderVersionTable(wrap, results) {
   if (!results.length) { wrap.innerHTML = ''; return; }
@@ -2429,10 +2505,30 @@ async function checkSingleProductVersion(btn, produto) {
       })
     ]);
 
-    const dataVersions = await resVersions.json();
+    // Lê NDJSON do check-versions
+    const vReader = resVersions.body.getReader();
+    const vDecoder = new TextDecoder();
+    let vBuf = '';
+    let dataVersions = { success: true, results: [] };
+    while (true) {
+      const { done, value } = await vReader.read();
+      if (done) break;
+      vBuf += vDecoder.decode(value, { stream: true });
+      const vLines = vBuf.split('\n');
+      vBuf = vLines.pop();
+      for (const vl of vLines) {
+        if (!vl.trim()) continue;
+        try {
+          const ev = JSON.parse(vl);
+          if (ev.type === 'result') dataVersions.results.push(ev);
+          if (ev.type === 'done' && !ev.success) dataVersions.success = false;
+        } catch(_) {}
+      }
+    }
+
     const dataReleases = await resReleases.json();
 
-    if (!dataVersions.success) throw new Error(dataVersions.error);
+    if (!dataVersions.success) throw new Error('Falha na verificação de versões');
     if (!dataReleases.success) throw new Error(dataReleases.error);
 
     // Update global map with new fetched versions

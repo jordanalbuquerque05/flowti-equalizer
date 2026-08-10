@@ -1153,98 +1153,20 @@ app.get('/api/soul-machines', async (req, res) => {
   }
 });
 
-// ─── Check Versions via SSH chain: BAL → SOUL ─────────────────────────────────
+// ─── Check Versions via SSH chain: BAL → SOUL (STREAMING) ──────────────────────
 app.post('/api/check-versions', async (req, res) => {
   const { balHost, balTenancy, machines, bals } = req.body;
   if (!balHost || !machines || !machines.length) {
     return res.status(400).json({ success: false, error: 'Missing balHost or machines' });
   }
 
-  const getBalForEnv = (env) => {
-    if (bals && bals.length) {
-      const b = bals.find(x => x.ambiente === env);
-      if (b && b.public_ip) return { host: b.public_ip, pass: SSH_PASSWORDS[b.tenancy] || Object.values(SSH_PASSWORDS)[0] };
-      return { host: bals[0].public_ip, pass: SSH_PASSWORDS[bals[0].tenancy] || Object.values(SSH_PASSWORDS)[0] };
-    }
-    return { host: balHost, pass: SSH_PASSWORDS[balTenancy] || Object.values(SSH_PASSWORDS)[0] };
-  };
+  // Streaming NDJSON — cada linha é um JSON independente
+  res.setHeader('Content-Type', 'application/x-ndjson');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
 
-  // Command is generated per machine in the loop based on its environment
-
-  function sshExec(host, password, cmd, timeout = 30000) {
-    return new Promise((resolve, reject) => {
-      const client = new Client();
-      let output = '';
-      const timer = setTimeout(() => {
-        client.end();
-        reject(new Error('Timeout'));
-      }, timeout);
-
-      client.on('ready', () => {
-        client.exec(cmd, (err, stream) => {
-          if (err) { clearTimeout(timer); client.end(); return reject(err); }
-          stream.on('data', d => { output += d.toString(); });
-          stream.stderr.on('data', () => { });
-          stream.on('close', () => { clearTimeout(timer); client.end(); resolve(output); });
-        });
-      });
-
-      client.on('error', err => { clearTimeout(timer); reject(err); });
-
-      client.connect({ host, port: 22, username: SSH_USER, password, readyTimeout: 15000 });
-    });
-  }
-
-  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 35000) {
-    return new Promise((resolve, reject) => {
-      const jumpClient = new Client();
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (!settled) { settled = true; jumpClient.end(); reject(new Error('Timeout na cadeia SSH')); }
-      }, timeout);
-
-      jumpClient.on('ready', () => {
-        jumpClient.forwardOut('127.0.0.1', 0, soulPrivIp, 22, (err, stream) => {
-          if (err) {
-            clearTimeout(timer); jumpClient.end();
-            if (!settled) { settled = true; reject(err); }
-            return;
-          }
-
-          const soulClient = new Client();
-          soulClient.on('ready', () => {
-            let output = '';
-            soulClient.exec(cmd, (err2, s) => {
-              if (err2) {
-                clearTimeout(timer); soulClient.end(); jumpClient.end();
-                if (!settled) { settled = true; reject(err2); }
-                return;
-              }
-              s.on('data', d => { output += d.toString(); });
-              s.stderr.on('data', () => { });
-              s.on('close', () => {
-                clearTimeout(timer); soulClient.end(); jumpClient.end();
-                if (!settled) { settled = true; resolve(output); }
-              });
-            });
-          });
-
-          soulClient.on('error', err3 => {
-            clearTimeout(timer); jumpClient.end();
-            if (!settled) { settled = true; reject(err3); }
-          });
-
-          soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
-        });
-      });
-
-      jumpClient.on('error', err => {
-        clearTimeout(timer);
-        if (!settled) { settled = true; reject(err); }
-      });
-
-      jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 7500 });
-    });
+  function sendEvent(obj) {
+    try { res.write(JSON.stringify(obj) + '\n'); } catch(_) {}
   }
 
   function parseVersionOutput(raw) {
@@ -1260,10 +1182,12 @@ app.post('/api/check-versions', async (req, res) => {
     return tomcats;
   }
 
-  const results = [];
+  const total = machines.length;
+  let completed = 0;
 
-  for (const machine of machines) {
-    const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
+  sendEvent({ type: 'start', total });
+
+  async function processMachine(machine) {
     const targetDir = getTargetDir(machine.ambiente);
     const dynamicCMD = `
 for serverdir in /MV/servers/${targetDir}/; do
@@ -1285,9 +1209,9 @@ for serverdir in /MV/servers/${targetDir}/; do
 done
     `.trim();
 
-    const mBal = getBalForEnv(machine.ambiente);
+    sendEvent({ type: 'progress', hostname: machine.hostname, ip: machine.ip, status: 'connecting' });
     try {
-      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: dynamicCMD, isStream: false, onData: null, timeout: 35000, res: null });
+      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: dynamicCMD, isStream: false, onData: null, timeout: 12000, res: null });
       const tomcats = parseVersionOutput(raw);
 
       // Update cache
@@ -1298,15 +1222,27 @@ done
         }
       }
 
-      results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, tomcats });
+      completed++;
+      sendEvent({ type: 'result', hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, tomcats, completed, total });
+      return { hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, tomcats };
     } catch (e) {
-      results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: false, error: e.message, tomcats: {} });
+      completed++;
+      sendEvent({ type: 'result', hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: false, error: e.message, tomcats: {}, completed, total });
+      return { hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: false, error: e.message, tomcats: {} };
     }
   }
 
-  saveTomcatCache();
+  const CONCURRENCY = 3;
+  const results = [];
+  for (let i = 0; i < machines.length; i += CONCURRENCY) {
+    const batch = machines.slice(i, i + CONCURRENCY);
+    const batchResults = await Promise.all(batch.map(m => processMachine(m)));
+    results.push(...batchResults);
+  }
 
-  res.json({ success: true, results });
+  saveTomcatCache();
+  sendEvent({ type: 'done', success: true, results });
+  res.end();
 });
 
 // ─── Check Available Releases via SSH chain: BAL → APP Machine ────────────────
