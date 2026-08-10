@@ -57,6 +57,136 @@ try {
   console.error('❌ Failed to load inventory JSON:', e.message);
 }
 
+
+// ─── SSH Fallback & Prioritization Helpers ─────────────────────────────────────
+function getIPMatchScore(ip1, ip2) {
+  if (!ip1 || !ip2) return 0;
+  const p1 = ip1.split('.');
+  const p2 = ip2.split('.');
+  let score = 0;
+  for (let i = 0; i < 4; i++) {
+    if (p1[i] === p2[i]) score++;
+    else break;
+  }
+  return score;
+}
+
+function sortBalsBySubnet(bals, targetIp) {
+  if (!bals || bals.length === 0) return [];
+  return [...bals].sort((a, b) => {
+    const scoreA = getIPMatchScore(a.ip, targetIp);
+    const scoreB = getIPMatchScore(b.ip, targetIp);
+    return scoreB - scoreA; // Descending
+  });
+}
+
+function sshChainExecCore(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, isStream, onData, timeout = 35000) {
+  return new Promise((resolve, reject) => {
+    const Client = require('ssh2').Client;
+    const jumpClient = new Client();
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; jumpClient.end(); reject(new Error('Timeout na cadeia SSH')); }
+    }, timeout);
+
+    jumpClient.on('ready', () => {
+      jumpClient.forwardOut('127.0.0.1', 0, soulPrivIp, 22, (err, stream) => {
+        if (err) {
+          clearTimeout(timer); jumpClient.end();
+          if (!settled) { settled = true; reject(err); }
+          return;
+        }
+
+        const soulClient = new Client();
+        soulClient.on('ready', () => {
+          let output = '';
+          soulClient.exec(cmd, (err2, s) => {
+            if (err2) {
+              clearTimeout(timer); soulClient.end(); jumpClient.end();
+              if (!settled) { settled = true; reject(err2); }
+              return;
+            }
+            s.on('data', d => {
+              const chunk = d.toString();
+              if (isStream && onData) onData(chunk);
+              else output += chunk;
+            });
+            s.stderr.on('data', () => { });
+            s.on('close', () => {
+              clearTimeout(timer); soulClient.end(); jumpClient.end();
+              if (!settled) { settled = true; resolve(output); }
+            });
+          });
+        });
+
+        soulClient.on('error', err3 => {
+          clearTimeout(timer); jumpClient.end();
+          if (!settled) { settled = true; reject(err3); }
+        });
+
+        soulClient.connect({ sock: stream, username: process.env.SSH_USER || 'flowti', password: soulPwd, readyTimeout: 15000 });
+      });
+    });
+
+    jumpClient.on('error', err4 => {
+      clearTimeout(timer);
+      if (!settled) { settled = true; reject(err4); }
+    });
+
+    jumpClient.connect({ host: balPubIp, port: 22, username: process.env.SSH_USER || 'flowti', password: balPwd, readyTimeout: 15000 });
+  });
+}
+
+async function executeWithBalFallback({ bals, balHost, balTenancy, targetMachine, cmd, isStream, onData, timeout, res }) {
+  let availableBals = [];
+  if (bals && bals.length > 0) {
+    // Tenta usar apenas BALs que tenham IP publico preenchido
+    availableBals = bals.filter(b => b.public_ip && b.public_ip !== '---');
+  }
+
+  // Se nao tiver na lista, monta um fallback mock usando o balHost recebido pela UI
+  if (availableBals.length === 0) {
+    availableBals = [{
+      public_ip: balHost,
+      ip: '0.0.0.0', // IP dummy
+      tenancy: balTenancy
+    }];
+  }
+
+  // Sort BALs por similaridade com o targetMachine.ip
+  const sortedBals = sortBalsBySubnet(availableBals, targetMachine.ip);
+  
+  let lastErr = null;
+  const soulPassword = targetMachine.sshPassword || targetMachine.senha || Object.values(SSH_PASSWORDS)[0] || '';
+
+  for (let i = 0; i < sortedBals.length; i++) {
+    const b = sortedBals[i];
+    const balPwd = b.sshPassword || b.senha || (b.tenancy ? (SSH_PASSWORDS)[b.tenancy] : '') || Object.values(SSH_PASSWORDS)[0];
+    
+    if (res && isStream) {
+      if (i > 0) {
+        res.write(`\n⚠ Fallback: tentando conectar pelo BAL ${b.hostname || b.public_ip} (${b.public_ip})\n`);
+      }
+    } else {
+      console.log(`[${targetMachine.hostname}] Conectando usando BAL ${b.public_ip}`);
+    }
+
+    try {
+      const result = await sshChainExecCore(b.public_ip, balPwd, targetMachine.ip, soulPassword, cmd, isStream, onData, timeout);
+      return result;
+    } catch (err) {
+      lastErr = err;
+      if (res && isStream) {
+        res.write(`❌ Falha no BAL ${b.hostname || b.public_ip}: ${err.message}\n`);
+      } else {
+        console.log(`[${targetMachine.hostname}] Falha no BAL ${b.public_ip}: ${err.message}`);
+      }
+    }
+  }
+
+  throw lastErr || new Error('Nenhum BAL disponivel para tentar.');
+}
+// ─── Fim Helpers SSH ───────────────────────────────────────────────────────────
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function isBAL(hostname) {
   return /\bBAL\b/i.test(hostname);
@@ -1134,7 +1264,7 @@ done
 
     const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, dynamicCMD);
+      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: dynamicCMD, isStream: false, onData: null, timeout: 35000, res: null });
       const tomcats = parseVersionOutput(raw);
 
       // Update cache
@@ -1271,7 +1401,7 @@ fi
     const CMD = buildReleasesCmd(machine.ambiente);
     const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, appPwd, CMD);
+      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: CMD, isStream: false, onData: null, timeout: 35000, res: null });
       const products = parseReleasesOutput(raw);
       results.push({ hostname: machine.hostname, ambiente: machine.ambiente, ip: machine.ip, success: true, products });
     } catch (e) {
@@ -1417,9 +1547,9 @@ done
     const soulPassword = SSH_PASSWORDS[machine.tenancy] || Object.values(SSH_PASSWORDS)[0];
     const mBal = getBalForEnv(machine.ambiente);
     try {
-      await sshChainExecStream(mBal.host, mBal.pass, machine.ip, soulPassword, CMD, (chunk) => {
+      await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: CMD, isStream: true, res: res, onData: (chunk) => {
         res.write(chunk);
-      });
+      }});
       res.write(`=== Concluído na máquina: ${machine.hostname} ===\n`);
     } catch (e) {
       res.write(`ERRO/TIMEOUT na máquina ${machine.hostname}: ${e.message}\n`);
@@ -1594,7 +1724,7 @@ echo "NOT_FOUND"
 
     const mBal = getBalForEnv(machine.ambiente);
     try {
-      const raw = await sshChainExec(mBal.host, mBal.pass, machine.ip, soulPassword, extractCmd);
+      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: extractCmd, isStream: false, onData: null, timeout: 35000, res: null });
 
       if (raw.includes('NOT_FOUND') || !raw.trim()) {
         res.write(`⚠ Nenhum arquivo de configuração encontrado em ${machine.hostname}\n`);
@@ -1708,7 +1838,7 @@ echo "---SQL_END---"
 `.trim();
 
       try {
-        const sqlRaw = await sshChainExec(balHost, balPassword, machine.ip, soulPassword, sqlCmd, 60000);
+        const sqlRaw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: sqlCmd, isStream: false, onData: null, timeout: 60000, res: null });
 
         if (sqlRaw.includes('SQLPLUS_NOT_FOUND')) {
           res.write(`⚠ sqlplus não encontrado na máquina ${machine.hostname}.\n`);

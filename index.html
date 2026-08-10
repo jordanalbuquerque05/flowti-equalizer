@@ -1066,7 +1066,7 @@ async function runFullCheck() {
       }
     }
 
-    const failedMachines = data.results.filter(r => !r.success).map(r => r.hostname);
+    const failedMachines = data.results.filter(r => !r.success).map(r => `${r.hostname} (${r.ip || 'Sem IP'})`);
     if (missingOrError) {
        const failListHtml = failedMachines.length > 0 ? `<div style="margin-top:8px; font-size:12px; color:#ff5555; background:rgba(255,85,85,0.1); padding:8px; border-radius:4px; border:1px solid rgba(255,85,85,0.3);"><strong>Máquinas offline:</strong> ${failedMachines.join(', ')}</div>` : '';
        tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
