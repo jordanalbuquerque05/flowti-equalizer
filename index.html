@@ -950,7 +950,7 @@ function renderSoulPanel(panel, data) {
             <button class="btn-check-versions" id="btnCheckVersions" onclick="runVersionCheck()">
               <span>⚡</span> Verificar Versões
             </button>
-            <button class="btn-check-versions" id="btnCheckReleases" onclick="runReleasesCheck(null, true)">
+            <button class="btn-check-versions" id="btnCheckReleases" onclick="_showingOnlyDivergentes = false; runReleasesCheck(null, false)">
               <span>📦</span> Verificar Releases
             </button>
             <button class="btn-check-versions" id="btnCheckDb" onclick="runDbCheck()" style="background:var(--success); color:#000;" title="Consultar versão no banco Oracle">
@@ -2233,32 +2233,50 @@ async function triggerSyncRelease(produto) {
 
   let prdInstalledVer = null;
   let prdTomcat = null;
-  if (window.lastVersionMap && window.lastVersionMap[prdMachine.hostname] && window.lastVersionMap[prdMachine.hostname].produtos && window.lastVersionMap[prdMachine.hostname].produtos[produto]) {
-    prdInstalledVer = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].versao;
-    prdTomcat = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].tomcat;
-  }
-
-  if (!prdInstalledVer) {
-    showNotif("Não foi possível identificar a versão instalada em PRD para este produto. Atualize os dados primeiro.", "err");
-    window.isProcessingAction = false;
-    return;
-  }
-
   let tstInstalledVer = null;
   let tstTomcat = null;
-  if (window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos && window.lastVersionMap[tstMachine.hostname].produtos[produto]) {
-    tstInstalledVer = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].versao;
-    tstTomcat = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].tomcat;
-  }
 
-  if (!tstTomcat) {
-    if (window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos) {
+  const extractData = () => {
+    if (window.lastVersionMap && window.lastVersionMap[prdMachine.hostname] && window.lastVersionMap[prdMachine.hostname].produtos && window.lastVersionMap[prdMachine.hostname].produtos[produto]) {
+      prdInstalledVer = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].versao;
+      prdTomcat = window.lastVersionMap[prdMachine.hostname].produtos[produto][0].tomcat;
+    }
+    if (window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos && window.lastVersionMap[tstMachine.hostname].produtos[produto]) {
+      tstInstalledVer = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].versao;
+      tstTomcat = window.lastVersionMap[tstMachine.hostname].produtos[produto][0].tomcat;
+    }
+    if (!tstTomcat && window.lastVersionMap && window.lastVersionMap[tstMachine.hostname] && window.lastVersionMap[tstMachine.hostname].produtos) {
        const prods = window.lastVersionMap[tstMachine.hostname].produtos;
        for (const p in prods) {
          if (prods[p] && prods[p].length > 0 && prods[p][0].tomcat) { tstTomcat = prods[p][0].tomcat; break; }
        }
     }
-    if (!tstTomcat) tstTomcat = prdTomcat;
+    if (!tstTomcat && prdTomcat) tstTomcat = prdTomcat;
+  };
+
+  extractData();
+
+  if (!prdInstalledVer || !tstTomcat) {
+    showNotif("Buscando dados do Tomcat em PRD/TST automaticamente...", "ok");
+    const btnRefresh = document.createElement('button'); // dummy button for UI
+    try {
+      await checkSingleProductVersion(btnRefresh, produto);
+      extractData(); // re-extract after fetch
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  if (!prdInstalledVer) {
+    showNotif("Não foi possível identificar a versão instalada em PRD para este produto. Verifique se o produto está instalado no Tomcat PRD.", "err");
+    window.isProcessingAction = false;
+    return;
+  }
+
+  if (!tstTomcat) {
+    showNotif("Não foi possível determinar o Tomcat de destino no TST. Verifique se há algum produto instalado no TST dessa máquina.", "err");
+    window.isProcessingAction = false;
+    return;
   }
 
   const balRef = getBestBalForMachines([tstMachine]);
