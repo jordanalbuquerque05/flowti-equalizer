@@ -708,6 +708,23 @@ async function checkDBStatus() {
 }
 
 // ─── Search / filter sidebar ──────────────────────────────────────────────────
+window.showBalsModal = function() {
+  if (!soulData || !soulData.bals || !soulData.bals.length) {
+    showNotif('Nenhum BAL encontrado para este cliente.', 'warn');
+    return;
+  }
+  const balsHtml = soulData.bals.map(b => 
+    `<div style="margin-bottom:8px; padding:8px; background:#1e1e1e; border-radius:4px;">
+       <strong>${b.hostname}</strong><br>
+       IP (Private): ${b.ip || 'N/A'}<br>
+       IP (Public): ${b.public_ip || '---'}<br>
+       Tenancy: ${b.tenancy || 'N/A'}
+     </div>`
+  ).join('');
+  showConfirmModal('BALs Configurados', `<div style="max-height:300px; overflow-y:auto; text-align:left;">${balsHtml}</div>`);
+};
+
+// ─── Search / filter sidebar ──────────────────────────────────────────────────
 let searchTimeout;
 $searchInput.addEventListener('input', () => {
   clearTimeout(searchTimeout);
@@ -821,7 +838,7 @@ function renderSoulPanel(panel, data) {
         <input type="checkbox" class="soul-chip-cb" id="soul-cb-${i}" checked style="pointer-events: none;">
         <div class="soul-chip-info">
           <div class="soul-chip-name" title="${m.hostname}">${m.hostname}</div>
-          <div class="soul-chip-env ${envLow.startsWith('prd') ? 'prd' : 'tst'}">${m.ambiente}</div>
+          <div class="soul-chip-env ${envLow.startsWith('prd') ? 'prd' : 'tst'}">${m.ambiente}${m.ip ? ' - ' + m.ip : ''}</div>
         </div>
       </div>
     `;
@@ -856,6 +873,7 @@ function renderSoulPanel(panel, data) {
         </div>
         <div style="margin-top: 8px; font-size: 11px; color: var(--text-dim);">
           <span class="soul-bal-info">Jump host: <strong>${balLabel}</strong></span>
+          <button class="btn-check-versions" style="padding: 2px 6px; font-size: 10px; background: rgba(255,255,255,0.1); margin: 0; margin-left: 10px;" onclick="showBalsModal()">Ver BALs (${bals.length})</button>
         </div>
         <div id="versionProgress" class="ver-progress" style="display:none;"></div>
         <div id="versionTableWrap"></div>

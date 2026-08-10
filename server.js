@@ -44,7 +44,7 @@ try {
   // Deduplicate: prefer entries with tenancy filled
   const map = new Map();
   for (const m of inventory) {
-    const key = m.hostname ? m.hostname.toUpperCase() : null;
+    const key = m.hostname ? m.hostname.toUpperCase() + (m.ip ? '_' + m.ip : '') : null;
     if (!key) continue;
     const existing = map.get(key);
     if (!existing || (!existing.tenancy && m.tenancy)) {
@@ -87,7 +87,7 @@ function normalizeMachine(m) {
 function dedupMachines(machines) {
   const map = new Map();
   for (const m of machines) {
-    const key = m.hostname.toLowerCase();
+    const key = m.hostname.toLowerCase() + (m.ip ? '_' + m.ip : '');
     const existing = map.get(key);
     if (!existing) {
       map.set(key, m);
