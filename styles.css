@@ -1258,12 +1258,10 @@ header {
   max-height: 28px;
   display: block;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.25));
   animation: logo-glow 2s infinite alternate ease-in-out;
 }
 @keyframes logo-glow {
-  0%   { filter: drop-shadow(0 0 3px rgba(255,255,255,0.3)) drop-shadow(0 0 6px rgba(180,180,255,0.2)); }
-  100% { filter: drop-shadow(0 0 10px rgba(255,255,255,0.95)) drop-shadow(0 0 20px rgba(200,200,255,0.6)) drop-shadow(0 0 35px rgba(150,150,255,0.3)); }
-}
-  100% { filter: drop-shadow(0 0 6px rgba(255,255,255,0.45)); }
+  0%   { filter: drop-shadow(0 0 2px rgba(255,255,255,0.2)) drop-shadow(0 0 4px rgba(180,180,255,0.1)); }
+  100% { filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)) drop-shadow(0 0 10px rgba(200,200,255,0.3)); }
 }

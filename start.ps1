@@ -27,7 +27,7 @@ function Try-WSL-Docker {
 
 # Tenta Docker local (se estiver rodando)
 if (Try-Docker) {
-    Write-Host "Aplicacao iniciada via Docker com sucesso! (http://localhost:3000)" -ForegroundColor Green
+    Write-Host "Aplicacao iniciada via Docker com sucesso! (http://localhost:8080)" -ForegroundColor Green
     exit 0
 }
 
@@ -41,7 +41,7 @@ if (Test-Path $dockerDesktopPath) {
     Write-Host "Aguardando 15 segundos..."
     Start-Sleep -Seconds 15
     if (Try-Docker) {
-        Write-Host "Aplicacao iniciada via Docker Desktop com sucesso! (http://localhost:3000)" -ForegroundColor Green
+        Write-Host "Aplicacao iniciada via Docker Desktop com sucesso! (http://localhost:8080)" -ForegroundColor Green
         exit 0
     }
 } else {
