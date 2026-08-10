@@ -82,7 +82,6 @@ function sortBalsBySubnet(bals, targetIp) {
 
 function sshChainExecCore(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, isStream, onData, timeout = 35000) {
   return new Promise((resolve, reject) => {
-    const Client = require('ssh2').Client;
     const jumpClient = new Client();
     let settled = false;
     const timer = setTimeout(() => {
@@ -124,7 +123,7 @@ function sshChainExecCore(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, isStream, 
           if (!settled) { settled = true; reject(err3); }
         });
 
-        soulClient.connect({ sock: stream, username: process.env.SSH_USER || 'flowti', password: soulPwd, readyTimeout: 15000 });
+        soulClient.connect({ sock: stream, username: SSH_USER, password: soulPwd, readyTimeout: 15000 });
       });
     });
 
@@ -133,64 +132,82 @@ function sshChainExecCore(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, isStream, 
       if (!settled) { settled = true; reject(err4); }
     });
 
-    jumpClient.connect({ host: balPubIp, port: 22, username: process.env.SSH_USER || 'flowti', password: balPwd, readyTimeout: 15000 });
+    jumpClient.connect({ host: balPubIp, port: 22, username: SSH_USER, password: balPwd, readyTimeout: 15000 });
   });
 }
 
 async function executeWithBalFallback({ bals, balHost, balTenancy, targetMachine, cmd, isStream, onData, timeout, res }) {
   let availableBals = [];
   if (bals && bals.length > 0) {
-    // Tenta usar apenas BALs que tenham IP publico preenchido
     availableBals = bals.filter(b => b.public_ip && b.public_ip !== '---');
   }
 
-  // Se nao tiver na lista, monta um fallback mock usando o balHost recebido pela UI
   if (availableBals.length === 0) {
     availableBals = [{
       public_ip: balHost,
-      ip: '0.0.0.0', // IP dummy
+      ip: '0.0.0.0',
       tenancy: balTenancy
     }];
   }
 
-  // Sort BALs por similaridade com o targetMachine.ip
+  // Sort BALs por similaridade de subnet com a máquina alvo
   const sortedBals = sortBalsBySubnet(availableBals, targetMachine.ip);
   
-  let lastErr = null;
-  const soulPassword = targetMachine.sshPassword || targetMachine.senha || Object.values(SSH_PASSWORDS)[0] || '';
+  // Monta lista de senhas únicas para tentar (prioriza a da tenancy da máquina)
+  const allPasswords = Object.values(SSH_PASSWORDS).filter(Boolean);
+  const machinePass = targetMachine.sshPassword || targetMachine.senha || '';
+  const uniquePasswords = [...new Set([machinePass, ...allPasswords].filter(Boolean))];
 
-  const maxTries = Math.min(2, sortedBals.length);
-  for (let i = 0; i < maxTries; i++) {
+  let lastErr = null;
+  const perBalTimeout = timeout || 20000;
+
+  // Tenta TODOS os BALs até que um consiga conectar
+  for (let i = 0; i < sortedBals.length; i++) {
     const b = sortedBals[i];
-    const balPwd = b.sshPassword || b.senha || (b.tenancy ? SSH_PASSWORDS[b.tenancy] : '') || Object.values(SSH_PASSWORDS)[0];
+    // Senha do BAL: prioriza a da tenancy do BAL
+    const balPwd = (b.tenancy ? SSH_PASSWORDS[b.tenancy] : '') || b.sshPassword || b.senha || Object.values(SSH_PASSWORDS)[0];
     
     if (res && isStream) {
-      if (i > 0) {
-        res.write(`\n⚠ Fallback: tentando conectar pelo BAL ${b.hostname || b.public_ip} (${b.public_ip})\n`);
+      if (i === 0) {
+        res.write(`🔌 Conectando via BAL ${b.hostname || b.public_ip} (${b.public_ip})\n`);
+      } else {
+        res.write(`\n⚠ Fallback: tentando BAL ${b.hostname || b.public_ip} (${b.public_ip})\n`);
       }
     } else {
-      console.log(`[${targetMachine.hostname}] Conectando usando BAL ${b.public_ip}`);
+      console.log(`[${targetMachine.hostname}] Tentativa ${i+1}/${sortedBals.length} - BAL ${b.public_ip}`);
     }
 
-    try {
-      const result = await sshChainExecCore(b.public_ip, balPwd, targetMachine.ip, soulPassword, cmd, isStream, onData, timeout);
-      return result;
-    } catch (err) {
-      lastErr = err;
-      if (res && isStream) {
-        res.write(`❌ Falha no BAL ${b.hostname || b.public_ip}: ${err.message}\n`);
-      } else {
-        console.log(`[${targetMachine.hostname}] Falha no BAL ${b.public_ip}: ${err.message}`);
-      }
-      
-      // Abort immediately on auth failures to prevent long hangs or account lockouts
-      if (err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('auth')) {
-        break;
+    // Para cada BAL, tenta todas as senhas disponíveis na SOUL
+    for (let p = 0; p < uniquePasswords.length; p++) {
+      const soulPwd = uniquePasswords[p];
+      try {
+        const result = await sshChainExecCore(b.public_ip, balPwd, targetMachine.ip, soulPwd, cmd, isStream, onData, perBalTimeout);
+        if (res && isStream && (i > 0 || p > 0)) {
+          res.write(`✅ Sucesso via BAL ${b.hostname || b.public_ip}\n`);
+        }
+        return result;
+      } catch (err) {
+        lastErr = err;
+        const isAuthFail = err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('auth');
+        
+        if (isAuthFail && p < uniquePasswords.length - 1) {
+          // Senha errada na SOUL, tenta a próxima senha sem log excessivo
+          continue;
+        }
+        
+        if (res && isStream) {
+          res.write(`❌ Falha BAL ${b.hostname || b.public_ip}: ${err.message}\n`);
+        } else {
+          console.log(`[${targetMachine.hostname}] Falha BAL ${b.public_ip}: ${err.message}`);
+        }
+        
+        // Se não é erro de auth, pula para o próximo BAL (problema de rede)
+        if (!isAuthFail) break;
       }
     }
   }
 
-  throw lastErr || new Error('Nenhum BAL disponivel para tentar.');
+  throw lastErr || new Error('Nenhum BAL disponivel para conexão.');
 }
 // ─── Fim Helpers SSH ───────────────────────────────────────────────────────────
 // ─── Helpers ──────────────────────────────────────────────────────────────────
