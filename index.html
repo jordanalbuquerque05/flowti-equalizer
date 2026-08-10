@@ -1203,13 +1203,55 @@ async function runFullCheck() {
     const failedMachines = data.results.filter(r => !r.success).map(r => `${r.hostname} (${r.ip || 'Sem IP'})`);
     if (missingOrError) {
        const failListHtml = failedMachines.length > 0 ? `<div style="margin-top:8px; font-size:12px; color:#ff5555; background:rgba(255,85,85,0.1); padding:8px; border-radius:4px; border:1px solid rgba(255,85,85,0.3);"><strong>Máquinas offline:</strong> ${failedMachines.join(', ')}</div>` : '';
-       tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
-         <div style="flex:1;">
-           <span style="font-weight:600;">⚠️ Houve erro ao conectar em algumas máquinas (verifique se estão ligadas).</span>
-           ${failListHtml}
+       
+       let normalContent = '';
+       if (mismatchedProducts.length > 0) {
+           normalContent = `
+             <div class="ver-mismatch-msg" style="margin-bottom:16px;">
+               <div>⚠ <strong>Atenção:</strong> Foram encontradas divergências nos seguintes produtos (máquinas offline ignoradas):</div>
+               <div style="font-size:12px; color:var(--text);">${mismatchedProducts.join(', ')}</div>
+               <button class="btn-check-versions" style="margin-top:12px; padding: 10px 20px; font-size: 14px; font-weight: 600;" onclick="runReleasesCheck(this, false)">
+                 <span>🔍</span> Listar
+               </button>
+             </div>
+           `;
+       } else if (equalizedProducts.length > 0) {
+           normalContent = `
+             <div class="ver-equalized-msg" style="margin-bottom:16px;">
+               ✅ <strong>Ambiente (online) já se encontra equalizado!</strong><br>
+               <span style="font-size:12px; font-weight:400; color:var(--text); display:block; margin-top:6px;">
+                 Todos os produtos de referência estão com as versões batendo (${equalizedProducts.length} produtos).
+               </span>
+             </div>
+           `;
+       } else {
+           normalContent = `<div class="ver-mismatch-msg" style="margin-bottom:16px;">Nenhum produto encontrado no servidor de referência.</div>`;
+       }
+
+       const btnIgnoreId = 'ignore-btn-' + Date.now();
+
+       tableWrap.innerHTML = `
+         <div id="error-box-${btnIgnoreId}" class="ver-mismatch-msg" style="margin-bottom:16px; display:flex; flex-direction:column; gap:16px;">
+           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+             <div style="flex:1;">
+               <span style="font-weight:600;">⚠️ Houve erro ao conectar em algumas máquinas (verifique se estão ligadas).</span>
+               ${failListHtml}
+             </div>
+             <div style="display:flex; gap:8px;">
+               <button id="${btnIgnoreId}" style="padding:10px 16px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Ignorar máquinas</button>
+               <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s; white-space:nowrap;">StartTstOps</a>
+             </div>
+           </div>
          </div>
-         <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s; white-space:nowrap;">StartTstOps</a>
-       </div>`;
+         <div id="normal-content-${btnIgnoreId}" style="display:none;">
+           ${normalContent}
+         </div>
+       `;
+
+       document.getElementById(btnIgnoreId).onclick = () => {
+         document.getElementById(`error-box-${btnIgnoreId}`).style.display = 'none';
+         document.getElementById(`normal-content-${btnIgnoreId}`).style.display = 'block';
+       };
     } else if (mismatchedProducts.length > 0) {
        tableWrap.innerHTML = `
          <div class="ver-mismatch-msg" style="margin-bottom:16px;">
@@ -1365,21 +1407,42 @@ async function runVersionCheck() {
 
     const data = { success: true, results: allResults };
     
-    const hasError = data.results.some(r => !r.success);
-    if (hasError) {
+    const failedMachines = data.results.filter(r => !r.success).map(r => `${r.hostname} (${r.ip || 'Sem IP'})`);
+    if (failedMachines.length > 0) {
       const errorMsg = document.createElement('div');
       errorMsg.className = "ver-mismatch-msg";
       errorMsg.style.marginBottom = "16px";
       errorMsg.style.display = "flex";
-      errorMsg.style.justifyContent = "space-between";
-      errorMsg.style.alignItems = "center";
-      errorMsg.innerHTML = `<span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
-      <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s;">StartTstOps</a>`;
+      errorMsg.style.flexDirection = "column";
+      errorMsg.style.gap = "16px";
+      
+      const btnIgnoreId = "ignore-btn-" + Date.now();
+      const failListHtml = `<div style="margin-top:8px; font-size:12px; color:#ff5555; background:rgba(255,85,85,0.1); padding:8px; border-radius:4px; border:1px solid rgba(255,85,85,0.3);"><strong>Máquinas offline:</strong> ${failedMachines.join(', ')}</div>`;
+      
+      errorMsg.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+          <div style="flex:1;">
+             <span style="font-weight:600;">⚠️ Houve erro ao conectar em algumas máquinas (verifique se estão ligadas).</span>
+             ${failListHtml}
+          </div>
+          <div style="display:flex; gap:8px;">
+             <button id="${btnIgnoreId}" style="padding:10px 16px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Ignorar máquinas</button>
+             <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s; white-space:nowrap;">StartTstOps</a>
+          </div>
+        </div>
+      `;
       tableWrap.appendChild(errorMsg);
       
       const tableInner = document.createElement('div');
+      tableInner.style.display = 'none';
       tableWrap.appendChild(tableInner);
-      renderVersionTable(tableInner, data.results);
+      const goodResults = data.results.filter(r => r.success);
+      renderVersionTable(tableInner, goodResults);
+
+      document.getElementById(btnIgnoreId).onclick = () => {
+         errorMsg.style.display = 'none';
+         tableInner.style.display = 'block';
+      };
     } else {
       renderVersionTable(tableWrap, data.results);
     }
@@ -1774,21 +1837,46 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
       }
     }
 
-    const hasError = data.results.some(r => !r.success);
+    const hasError = data.results.some(r => !r.success) || dataVersions.results.some(r => !r.success);
     if (hasError) {
+      const failedMap = new Map();
+      data.results.filter(r => !r.success).forEach(r => failedMap.set(r.hostname, r.ip));
+      dataVersions.results.filter(r => !r.success).forEach(r => failedMap.set(r.hostname, r.ip));
+      const failedMachines = Array.from(failedMap.entries()).map(([host, ip]) => `${host} (${ip || 'Sem IP'})`);
+      const failListHtml = failedMachines.length > 0 ? `<div style="margin-top:8px; font-size:12px; color:#ff5555; background:rgba(255,85,85,0.1); padding:8px; border-radius:4px; border:1px solid rgba(255,85,85,0.3);"><strong>Máquinas offline:</strong> ${failedMachines.join(', ')}</div>` : '';
+
       const errorMsg = document.createElement('div');
       errorMsg.className = "ver-mismatch-msg";
       errorMsg.style.marginBottom = "16px";
       errorMsg.style.display = "flex";
-      errorMsg.style.justifyContent = "space-between";
-      errorMsg.style.alignItems = "center";
-      errorMsg.innerHTML = `<span>Houve erro ao conectar em algumas máquinas verifique se todas estão ligadas</span>
-      <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s;">StartTstOps</a>`;
+      errorMsg.style.flexDirection = "column";
+      errorMsg.style.gap = "16px";
+      
+      const btnIgnoreId = "ignore-btn-" + Date.now();
+      errorMsg.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+          <div style="flex:1;">
+             <span style="font-weight:600;">⚠️ Houve erro ao conectar em algumas máquinas (verifique se estão ligadas).</span>
+             ${failListHtml}
+          </div>
+          <div style="display:flex; gap:8px;">
+             <button id="${btnIgnoreId}" style="padding:10px 16px; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">Ignorar máquinas</button>
+             <a href="https://start-tst.flowti.com.br/" target="_blank" style="padding:10px 20px; background:var(--accent); color:#fff; text-decoration:none; border-radius:6px; font-size:14px; font-weight:bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display:inline-block; transition: transform 0.2s; white-space:nowrap;">StartTstOps</a>
+          </div>
+        </div>
+      `;
       relWrap.appendChild(errorMsg);
       
       const tableInner = document.createElement('div');
+      tableInner.style.display = 'none';
       relWrap.appendChild(tableInner);
-      renderReleasesTable(tableInner, data.results, isReadOnly);
+      const goodResults = data.results.filter(r => r.success);
+      renderReleasesTable(tableInner, goodResults, isReadOnly);
+
+      document.getElementById(btnIgnoreId).onclick = () => {
+         errorMsg.style.display = 'none';
+         tableInner.style.display = 'block';
+      };
     } else {
       renderReleasesTable(relWrap, data.results, isReadOnly);
     }
