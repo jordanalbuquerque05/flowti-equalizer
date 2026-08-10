@@ -159,9 +159,10 @@ async function executeWithBalFallback({ bals, balHost, balTenancy, targetMachine
   let lastErr = null;
   const soulPassword = targetMachine.sshPassword || targetMachine.senha || Object.values(SSH_PASSWORDS)[0] || '';
 
-  for (let i = 0; i < sortedBals.length; i++) {
+  const maxTries = Math.min(2, sortedBals.length);
+  for (let i = 0; i < maxTries; i++) {
     const b = sortedBals[i];
-    const balPwd = b.sshPassword || b.senha || (b.tenancy ? (SSH_PASSWORDS)[b.tenancy] : '') || Object.values(SSH_PASSWORDS)[0];
+    const balPwd = b.sshPassword || b.senha || (b.tenancy ? SSH_PASSWORDS[b.tenancy] : '') || Object.values(SSH_PASSWORDS)[0];
     
     if (res && isStream) {
       if (i > 0) {
@@ -180,6 +181,11 @@ async function executeWithBalFallback({ bals, balHost, balTenancy, targetMachine
         res.write(`❌ Falha no BAL ${b.hostname || b.public_ip}: ${err.message}\n`);
       } else {
         console.log(`[${targetMachine.hostname}] Falha no BAL ${b.public_ip}: ${err.message}`);
+      }
+      
+      // Abort immediately on auth failures to prevent long hangs or account lockouts
+      if (err.message.toLowerCase().includes('authentication') || err.message.toLowerCase().includes('auth')) {
+        break;
       }
     }
   }
