@@ -2457,52 +2457,87 @@ async function triggerSyncRelease(produto) {
   // ── Verificar se a pasta forms já existe no TST para esta release ──
   let forceOverwrite = false;
   let skipFiles = false;
-  try {
-    showNotif('⏳ Verificando se a release já existe em TST...', 'ok');
-    const checkRes = await fetch('/api/check-release-exists', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        balHost: balRef.public_ip, bals: soulData.bals, balTenancy: balRef.tenancy,
-        tstMachine: { hostname: tstMachine.hostname, ip: tstMachine.ip, tenancy: tstMachine.tenancy, ambiente: tstMachine.ambiente },
-        produto,
-        release: prdInstalledVer
-      })
-    });
-    const checkData = await checkRes.json();
+  
+  const proceed = await new Promise(async (resolve) => {
+    const overlay = document.getElementById('confirmModalOverlay');
+    const titleEl = document.getElementById('confirmModalTitle');
+    const msgEl = document.getElementById('confirmModalMessage');
+    const btnCancel = document.getElementById('confirmBtnCancel');
+    const btnOk = document.getElementById('confirmBtnOk');
 
-    if (checkData.exists) {
-      const choice = await showReleaseExistsModal(produto, prdInstalledVer, tstMachine.hostname);
-      if (choice === 'cancel') {
-        window.isProcessingAction = false;
-        return;
-      }
-      if (choice === 'overwrite') {
-        forceOverwrite = true;
-      } else if (choice === 'skip') {
-        skipFiles = true;
-      }
-    } else {
-      // Confirmação padrão
-      const confirmed = await showConfirmModal(
-        `Atenção: Copiar Release de PRD`,
-        `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`
-      );
-      if (!confirmed) {
-        window.isProcessingAction = false;
-        return;
-      }
+    titleEl.textContent = '⏳ Verificando release em TST...';
+    msgEl.innerHTML = '<div style="text-align:center; padding:20px 0;"><span style="font-size:24px; display:inline-block; animation:spin 1s linear infinite;">🔄</span><br><br>Consultando o servidor destino...</div>';
+    btnCancel.style.display = 'none';
+    btnOk.style.display = 'none';
+    overlay.style.display = 'flex';
+
+    function cleanup() {
+      overlay.style.display = 'none';
+      btnOk.style.display = 'block';
+      btnCancel.style.display = 'block';
+      btnCancel.onclick = null;
+      btnOk.onclick = null;
+      const skipBtn = document.getElementById('btnSkipFiles');
+      if (skipBtn) skipBtn.onclick = null;
+      const overBtn = document.getElementById('btnOverwriteFiles');
+      if (overBtn) overBtn.onclick = null;
     }
-  } catch (checkErr) {
-    // Em caso de erro na verificação, prosseguir com confirmação padrão
-    const confirmed = await showConfirmModal(
-      `Atenção: Copiar Release de PRD`,
-      `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`
-    );
-    if (!confirmed) {
-      window.isProcessingAction = false;
-      return;
+
+    try {
+      const checkRes = await fetch('/api/check-release-exists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          balHost: balRef.public_ip, bals: soulData.bals, balTenancy: balRef.tenancy,
+          tstMachine: { hostname: tstMachine.hostname, ip: tstMachine.ip, tenancy: tstMachine.tenancy, ambiente: tstMachine.ambiente },
+          produto,
+          release: prdInstalledVer
+        })
+      });
+      const checkData = await checkRes.json();
+
+      btnCancel.style.display = 'block';
+
+      if (checkData.exists) {
+        titleEl.textContent = '⚠️ Release já existe no disco!';
+        msgEl.innerHTML = `Os arquivos da versão <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> já existem no servidor (provavelmente compartilhados via NFS por outra máquina).<br><br>O que deseja fazer na máquina <strong>${tstMachine.hostname}</strong>?<br><br>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+          <button id="btnSkipFiles" style="padding:10px; border-radius:6px; background:var(--accent); border:none; color:#fff; cursor:pointer; font-weight:600;">Apenas configurar Tomcat (Recomendado)</button>
+          <button id="btnOverwriteFiles" style="padding:10px; border-radius:6px; background:rgba(255,85,85,0.2); border:1px solid #ff5555; color:#ff5555; cursor:pointer; font-weight:600;">Forçar re-cópia dos arquivos</button>
+        </div>`;
+        
+        btnOk.style.display = 'none';
+        
+        setTimeout(() => {
+          const btnS = document.getElementById('btnSkipFiles');
+          const btnO = document.getElementById('btnOverwriteFiles');
+          if (btnS) btnS.onclick = () => { skipFiles = true; cleanup(); resolve(true); };
+          if (btnO) btnO.onclick = () => { forceOverwrite = true; cleanup(); resolve(true); };
+        }, 10);
+      } else {
+        titleEl.textContent = `Atenção: Copiar Release de PRD`;
+        msgEl.innerHTML = `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`;
+        btnOk.style.display = 'block';
+        btnOk.onclick = () => { cleanup(); resolve(true); };
+      }
+      
+      btnCancel.onclick = () => { cleanup(); resolve(false); };
+      
+    } catch (checkErr) {
+      titleEl.textContent = `Atenção: Copiar Release de PRD (Verificação Falhou)`;
+      msgEl.innerHTML = `Não foi possível verificar se a release já existe no servidor.<br><br>Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas da release para a máquina de TST.`;
+      
+      btnCancel.style.display = 'block';
+      btnOk.style.display = 'block';
+      
+      btnOk.onclick = () => { cleanup(); resolve(true); };
+      btnCancel.onclick = () => { cleanup(); resolve(false); };
     }
+  });
+
+  if (!proceed) {
+    window.isProcessingAction = false;
+    return;
   }
 
   const consoleContainer = document.getElementById('updateConsoleContainer');
