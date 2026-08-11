@@ -732,7 +732,7 @@ app.post('/api/check-release-exists', async (req, res) => {
   };
 
   const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
-  const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "EXISTS"; else echo "NOT_EXISTS"; fi`;
+  const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "DIR_EXISTS"; else echo "DIR_NOT_FOUND"; fi`;
 
   try {
     const output = await executeWithBalFallback({
@@ -740,7 +740,7 @@ app.post('/api/check-release-exists', async (req, res) => {
       targetMachine: tstMachine,
       cmd, isStream: false, timeout: 25000
     });
-    res.json({ success: true, exists: output.includes('EXISTS') });
+    res.json({ success: true, exists: output.includes('DIR_EXISTS') });
   } catch (e) {
     res.json({ success: false, error: e.message, exists: false });
   }
@@ -748,7 +748,7 @@ app.post('/api/check-release-exists', async (req, res) => {
 
 app.post('/api/sync-release', async (req, res) => {
 
-  const { produto, release, prdMachine, tstMachine, prdTomcat, tstTomcat, tstInstalledVer, balHost, balTenancy, bals, forceOverwrite } = req.body;
+  const { produto, release, prdMachine, tstMachine, prdTomcat, tstTomcat, tstInstalledVer, balHost, balTenancy, bals, forceOverwrite, skipFiles } = req.body;
 
   if (!produto || !release || !prdMachine || !tstMachine || !prdTomcat || !tstTomcat) {
     return res.status(400).json({ error: 'Faltam parâmetros obrigatórios' });
@@ -991,7 +991,8 @@ app.post('/api/sync-release', async (req, res) => {
     }
 
     res.write(`>> [7/7] Ajustando permissões (chown mv.mv) no TST...\n`);
-    await execCmd(tstSoulClient, `sudo su -c "chown -R mv.mv ${tstPath}"`, 'TST-CHOWN');
+    const targetReleasePath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+    await execCmd(tstSoulClient, `sudo su -c "chown -R mv.mv ${targetReleasePath}"`, 'TST-CHOWN');
     res.write(`✅ Permissões ajustadas!\n`);
 
     res.write(`\n🎉 PROCESSO CONCLUÍDO COM SUCESSO!\n`);

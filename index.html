@@ -1784,20 +1784,14 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
       machines: selected.map(m => ({ hostname: m.hostname, ip: m.ip, ambiente: m.ambiente, tenancy: m.tenancy }))
     };
 
-    const [resVersions, resReleases] = await Promise.all([
-      fetch('/api/check-versions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }),
-      fetch('/api/check-releases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-    ]);
+    // Executa check-versions primeiro para evitar problemas de concorrência SSH nas máquinas
+    const resVersions = await fetch('/api/check-versions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
 
-    // Lê NDJSON do check-versions
+    // Lê NDJSON do check-versions completamente antes de iniciar check-releases
     const vReader = resVersions.body.getReader();
     const vDecoder = new TextDecoder();
     let vBuf = '';
@@ -1818,6 +1812,12 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
       }
     }
 
+    // Agora que as conexões SSH do check-versions finalizaram, iniciamos o check-releases
+    const resReleases = await fetch('/api/check-releases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
     const data = await resReleases.json();
 
     if (!dataVersions.success) throw new Error('Falha na verificação de versões no Tomcat');
@@ -1872,7 +1872,11 @@ async function runReleasesCheck(btnEl = null, isReadOnly = true) {
       const tableInner = document.createElement('div');
       tableInner.style.display = 'none';
       relWrap.appendChild(tableInner);
-      const goodResults = data.results.filter(r => r.success);
+      // Mantém a máquina na tabela se ela funcionou no check-releases OU se funcionou no check-versions
+      const goodResults = data.results.filter(r => {
+        const vr = dataVersions.results.find(x => x.hostname === r.hostname);
+        return r.success || (vr && vr.success);
+      });
       renderReleasesTable(tableInner, goodResults, isReadOnly);
 
       document.getElementById(btnIgnoreId).onclick = () => {
