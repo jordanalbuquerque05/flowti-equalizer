@@ -1178,23 +1178,27 @@ async function runFullCheck() {
 
     const mismatchedProducts = [];
     const equalizedProducts = [];
+    const missingProducts = [];
     window.lastMismatchedProducts = new Set();
 
     for (const prod of prdProducts) {
       const refVersions = machineMap[refHostname]?.produtos[prod] || [];
       const refVer = refVersions.length ? refVersions[0].versao : null;
       let isMismatch = false;
+      let isMissing = false;
 
       for (const r of data.results) {
         if (r.hostname === refHostname) continue;
         const vers = machineMap[r.hostname]?.produtos[prod] || [];
-        if (!vers.length) { isMismatch = true; break; }
+        if (!vers.length) { isMissing = true; continue; }
         if (vers.some(v => v.versao !== refVer)) { isMismatch = true; break; }
       }
 
       if (isMismatch) {
         mismatchedProducts.push(prod);
         window.lastMismatchedProducts.add(prod);
+      } else if (isMissing) {
+        missingProducts.push(prod);
       } else {
         equalizedProducts.push(prod);
       }
@@ -1215,13 +1219,23 @@ async function runFullCheck() {
                </button>
              </div>
            `;
-       } else if (equalizedProducts.length > 0) {
+       } else if (equalizedProducts.length > 0 || missingProducts.length > 0) {
+           let missingHtml = '';
+           if (missingProducts.length > 0) {
+               missingHtml = `
+                 <div style="margin-top:12px; background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.3); padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                   <span style="color:#ffaa00; font-weight:600; font-size:12px;">⚠ Produtos não instalados nos tomcats: ${missingProducts.length}</span>
+                   <button onclick="alert('Produtos não instalados:\\n- ${missingProducts.join('\\n- ')}')" style="padding:4px 8px; font-size:11px; background:rgba(255,170,0,0.2); border:1px solid #ffaa00; color:#ffaa00; border-radius:4px; cursor:pointer;">Ver quais</button>
+                 </div>
+               `;
+           }
            normalContent = `
              <div class="ver-equalized-msg" style="margin-bottom:16px;">
                ✅ <strong>Ambiente (online) já se encontra equalizado!</strong><br>
                <span style="font-size:12px; font-weight:400; color:var(--text); display:block; margin-top:6px;">
-                 Todos os produtos de referência estão com as versões batendo (${equalizedProducts.length} produtos).
+                 Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).
                </span>
+               ${missingHtml}
              </div>
            `;
        } else {
@@ -1263,13 +1277,23 @@ async function runFullCheck() {
          </div>
        `;
        logProgress(`⚠ Divergências encontradas. Mostrando botão de sincronização.`);
-    } else if (equalizedProducts.length > 0) {
+    } else if (equalizedProducts.length > 0 || missingProducts.length > 0) {
+       let missingHtml = '';
+       if (missingProducts.length > 0) {
+           missingHtml = `
+             <div style="margin-top:12px; background:rgba(255,170,0,0.1); border:1px solid rgba(255,170,0,0.3); padding:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+               <span style="color:#ffaa00; font-weight:600; font-size:12px;">⚠ Produtos não instalados nos tomcats: ${missingProducts.length}</span>
+               <button onclick="alert('Produtos não instalados:\\n- ${missingProducts.join('\\n- ')}')" style="padding:4px 8px; font-size:11px; background:rgba(255,170,0,0.2); border:1px solid #ffaa00; color:#ffaa00; border-radius:4px; cursor:pointer;">Ver quais</button>
+             </div>
+           `;
+       }
        tableWrap.innerHTML = `
          <div class="ver-equalized-msg" style="margin-bottom:16px;">
            ✅ <strong>Ambiente já se encontra equalizado!</strong><br>
            <span style="font-size:12px; font-weight:400; color:var(--text); display:block; margin-top:6px;">
-             Todos os produtos de referência estão com as versões batendo (${equalizedProducts.length} produtos).
+             Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).
            </span>
+           ${missingHtml}
          </div>
        `;
        logProgress(`✅ Ambientes equalizados!`);
