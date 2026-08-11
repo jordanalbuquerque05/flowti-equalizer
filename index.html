@@ -2516,7 +2516,7 @@ async function triggerSyncRelease(produto) {
         }, 10);
       } else {
         titleEl.textContent = `Atenção: Copiar Release de PRD`;
-        msgEl.innerHTML = `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir as pastas <code>forms</code> e <code>uploadfiles</code> (se existir) da release para a máquina de TST.`;
+        msgEl.innerHTML = `Deseja realmente <strong>COPIAR</strong> a release <strong>${prdInstalledVer}</strong> do produto <strong>${produto}</strong> de PRD para TST?<br><br>Isso irá transferir a pasta <code>forms</code> da release para a máquina de TST.`;
         btnOk.style.display = 'block';
         btnOk.onclick = () => { cleanup(); resolve(true); };
       }

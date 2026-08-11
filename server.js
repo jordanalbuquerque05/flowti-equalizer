@@ -732,7 +732,7 @@ app.post('/api/check-release-exists', async (req, res) => {
   };
 
   const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
-  const cmd = `if [ -d "${tstPath}/forms" ] || [ -d "${tstPath}/uploadfiles" ]; then echo "DIR_EXISTS"; else echo "DIR_NOT_FOUND"; fi`;
+  const cmd = `if [ -d "${tstPath}/forms" ]; then echo "DIR_EXISTS"; else echo "DIR_NOT_FOUND"; fi`;
 
   try {
     const output = await executeWithBalFallback({
@@ -928,16 +928,16 @@ app.post('/api/sync-release', async (req, res) => {
       await execCmd(tstSoulClient, `sudo su -c "mkdir -p ${tstPath}"`, 'TST-MKDIR');
 
       if (forceOverwrite) {
-        res.write(`   - Removendo pastas 'forms' e 'uploadfiles' antigas em TST (forceOverwrite)...\n`);
-        await execCmd(tstSoulClient, `sudo su -c "rm -rf ${tstPath}/forms ${tstPath}/uploadfiles"`, 'TST-RM-DIRS');
+        res.write(`   - Removendo pasta 'forms' antigas em TST (forceOverwrite)...\n`);
+        await execCmd(tstSoulClient, `sudo su -c "rm -rf ${tstPath}/forms"`, 'TST-RM-DIRS');
         res.write(`   ✅ Pastas antigas removidas!\n`);
       }
 
-      res.write(`   - Compactando 'forms' e 'uploadfiles' (se existir) de PRD\n`);
+      res.write(`   - Compactando 'forms' (se existir) de PRD\n`);
       res.write(`   - Extraindo em ${tstPath}\n`);
 
       await new Promise((resolve, reject) => {
-        const tarCmd = `sudo su -c "cd ${prdPath} && tar --exclude='forms/uploadfiles' -czf - \\$([ -d forms ] && echo forms) \\$([ -d uploadfiles ] && echo uploadfiles)"`;
+        const tarCmd = `sudo su -c "cd ${prdPath} && tar -czf - \\$([ -d forms ] && echo forms)"`;
         prdSoulClient.exec(tarCmd, (err, prdStream) => {
           if (err) return reject(err);
 
@@ -966,7 +966,7 @@ app.post('/api/sync-release', async (req, res) => {
             prdStream.pipe(tstStream);
 
             tstStream.on('close', (code) => {
-              if (code !== 0 && !tstErr.includes('forms/') && !tstErr.includes('uploadfiles/')) reject(new Error(tstErr || 'Erro no tar TST'));
+              if (code !== 0 && !tstErr.includes('forms/')) reject(new Error(tstErr || 'Erro no tar TST'));
               else resolve();
             });
 
