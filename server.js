@@ -226,6 +226,7 @@ function normalizeMachine(m) {
   return {
     hostname: m.hostname || '',
     ip: m.ip || '',
+    public_ip: m.public_ip || '',
     codigo: (m.codigo || '').replace(/^0+/, '') || m.codigo || '',
     codigoRaw: m.codigo || '',
     tenancy: m.tenancy || '',
@@ -236,20 +237,19 @@ function normalizeMachine(m) {
   };
 }
 
-
 function dedupMachines(machines) {
   const map = new Map();
   for (const m of machines) {
     const key = m.hostname.toLowerCase() + (m.ip ? '_' + m.ip : '');
     const existing = map.get(key);
     if (!existing) {
-      map.set(key, m);
+      map.set(key, { ...m });
     } else {
-      if (m.tenancy && !existing.tenancy) {
-        map.set(key, m);
-      } else if (m.sshPassword && !existing.sshPassword) {
-        map.set(key, m);
-      }
+      if (m.tenancy && !existing.tenancy) existing.tenancy = m.tenancy;
+      if (m.sshPassword && !existing.sshPassword) existing.sshPassword = m.sshPassword;
+      if (m.senha && !existing.senha) existing.senha = m.senha;
+      if (m.public_ip && (!existing.public_ip || existing.public_ip === '---')) existing.public_ip = m.public_ip;
+      if (m.dns && !existing.dns) existing.dns = m.dns;
     }
   }
   return Array.from(map.values());
@@ -278,6 +278,7 @@ function getSOULsFromInventory(codigoSearch) {
   const search = codigoSearch.trim().toLowerCase();
   const list = inventory
     .filter((m) => {
+      if (isBAL(m.hostname || '')) return false;
       const h = (m.hostname || '').toUpperCase();
       const isApp = h.includes('SOUL') || h.includes('ERP') || h.includes('HOSP') || h.includes('-REPORT') || h.includes('PEP') || h.includes('INTEGRACAO');
       if (!isApp) return false;
@@ -493,14 +494,14 @@ app.post('/api/restart-tomcat', async (req, res) => {
                 // Etapa 0: Descobrir o ID/porta do Tomcat
                 let findTomcatCmd = '';
                 if (cachedTomcat) {
-                  findTomcatCmd = `tomcat_name="${cachedTomcat}"\ntomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')\necho "$tomcat_port"`;
+                  findTomcatCmd = `tomcat_name="${cachedTomcat}"\ntomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')\necho "TOMCAT_ID=$tomcat_port"`;
                 } else {
                   findTomcatCmd = `
 xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
 if [ -z "$xml" ]; then exit 1; fi
 tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
 tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
-echo "$tomcat_port"
+echo "TOMCAT_ID=$tomcat_port"
 `;
                 }
                 
@@ -509,7 +510,16 @@ echo "$tomcat_port"
                    throw new Error(`Produto ${produto} não encontrado ou sem porta no ambiente ${targetDir}.`);
                 }
                 const outputLines = res0.output.trim().split('\n');
-                const tomcatId = outputLines[outputLines.length - 1].trim();
+                let tomcatId = null;
+                for (const line of outputLines) {
+                  if (line.startsWith('TOMCAT_ID=')) {
+                    tomcatId = line.replace('TOMCAT_ID=', '').trim();
+                    break;
+                  }
+                }
+                if (!tomcatId) {
+                  throw new Error(`Falha ao determinar o ID do Tomcat para o produto ${produto}. Saída: ${res0.output}`);
+                }
                 res.write(`✅ Tomcat encontrado: ID ${tomcatId}\n`);
 
                 // Etapa 1: STOP via tomcatctl
@@ -1099,8 +1109,8 @@ app.get('/api/soul-machines', async (req, res) => {
   if (!codigo) return res.status(400).json({ success: false, error: 'Missing codigo' });
 
   try {
-    let soulMachines = getSOULsFromInventory(codigo);
-    let bals = getBALsFromInventory(codigo).filter(m => m.public_ip && m.public_ip !== '---');
+    let soulMachines = getSOULsFromInventory(codigo).filter(m => !isBAL(m.hostname));
+    let bals = getBALsFromInventory(codigo);
 
     // Sempre busca no BD e mescla com a memória
     const pool = await getDB();
@@ -1111,6 +1121,7 @@ app.get('/api/soul-machines', async (req, res) => {
         `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
          FROM instances
          WHERE (client_code = ? OR client_code = ?)
+           AND UPPER(hostname) NOT LIKE '%BAL%'
            AND (
              UPPER(hostname) LIKE '%SOUL%' OR
              UPPER(hostname) LIKE '%ERP%'  OR
@@ -1122,19 +1133,20 @@ app.get('/api/soul-machines', async (req, res) => {
          ORDER BY hostname`,
         [codigo, padded]
       );
-      const dbSoul = soulRows.map(m => ({
-        ...m,
-        ambiente: getEnvLabel(m.hostname),
-        sshPassword: SSH_PASSWORDS[m.tenancy] || '',
-      }));
-      soulMachines = dedupMachines(soulMachines.concat(dbSoul));
+      const dbSoul = soulRows
+        .map(m => ({
+          ...m,
+          ambiente: getEnvLabel(m.hostname),
+          sshPassword: SSH_PASSWORDS[m.tenancy] || '',
+        }))
+        .filter(m => !isBAL(m.hostname));
+      soulMachines = dedupMachines(soulMachines.concat(dbSoul)).filter(m => !isBAL(m.hostname));
 
       const [balRows] = await pool.query(
         `SELECT hostname, private_ip AS ip, public_ip, client_code AS codigo, tenancy_name AS tenancy
          FROM instances
          WHERE (client_code = ? OR client_code = ?)
            AND UPPER(hostname) LIKE '%BAL%'
-           AND public_ip IS NOT NULL AND public_ip != '---'
          ORDER BY hostname`,
         [codigo, padded]
       );

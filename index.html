@@ -745,7 +745,7 @@ async function loadMachines(codigo) {
 
   $mainContent.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);">
     <div class="spinner" style="width:24px;height:24px;margin:0 auto 12px;border-width:3px;"></div>
-    <div>Carregando BALs do cliente ${codigo}...</div>
+    <div>Carregando servidores do cliente ${codigo}...</div>
   </div>`;
 
   try {
@@ -754,19 +754,10 @@ async function loadMachines(codigo) {
     if (!data.success) throw new Error('API error');
 
     state.machines = data.data;
-    $headerCount.textContent = `${data.count} BAL${data.count !== 1 ? 's' : ''} – Cliente ${codigo}`;
-
-    if (!data.data.length) {
-      $mainContent.innerHTML = `<div class="empty-state">
-        <div class="empty-state-icon">🔍</div>
-        <h2>Nenhum BAL encontrado</h2>
-        <p>O código "${codigo}" não possui máquinas BAL registradas no inventário.</p>
-      </div>`;
-      return;
-    }
+    $headerCount.textContent = `Cliente ${codigo}`;
 
     renderMachines(data.data, codigo);
-    addLog(`Cliente ${codigo}: ${data.count} BAL(s) carregados.`, 'ok');
+    addLog(`Cliente ${codigo}: carregando inventário...`, 'ok');
   } catch (e) {
     addLog('Erro ao carregar máquinas: ' + e.message, 'err');
     $mainContent.innerHTML = `<div class="empty-state">
@@ -901,22 +892,23 @@ async function loadSoulPanel(codigo) {
     if (!data.success) throw new Error(data.error);
 
     soulData = data;
+    $headerCount.textContent = `${data.soulMachines.length} servidor${data.soulMachines.length !== 1 ? 'es' : ''} – Cliente ${codigo}`;
 
     if (!data.soulMachines.length) {
-      panel.innerHTML = ``;
+      panel.innerHTML = `<div style="margin:24px;text-align:center;color:var(--text-muted);">Nenhum servidor de aplicação encontrado para o cliente ${codigo}.</div>`;
       return;
     }
 
     renderSoulPanel(panel, data);
   } catch (e) {
-    panel.innerHTML = `<div style="margin:0 24px 12px;color:var(--danger);font-size:12px;">⚠ Não foi possível carregar máquinas SOUL: ${e.message}</div>`;
+    panel.innerHTML = `<div style="margin:0 24px 12px;color:var(--danger);font-size:12px;">⚠ Não foi possível carregar servidores: ${e.message}</div>`;
   }
 }
 
 function renderSoulPanel(panel, data) {
   const { soulMachines, bals } = data;
-  const balRef = bals[0]; // First BAL used as jump host
-  const balLabel = balRef ? `${balRef.hostname} (${balRef.public_ip})` : 'Nenhum BAL com IP público';
+  const balRef = bals.find(b => b.public_ip && b.public_ip !== '---') || bals[0];
+  const balLabel = balRef ? `${balRef.hostname} (${balRef.public_ip || balRef.ip})` : 'Nenhum BAL configurado';
 
   const chipHTML = soulMachines.map((m, i) => {
     const envLow = (m.ambiente || 'tst').toLowerCase();
