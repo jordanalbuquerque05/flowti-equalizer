@@ -1616,6 +1616,7 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
     loadingEl.style.display = 'none';
     selectEl.style.display = 'block';
     selectEl.innerHTML = `<option disabled selected>Erro ao buscar versões: ${e.message}</option>`;
+    window.isProcessingAction = false;
     return;
   }
 
@@ -1626,7 +1627,7 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
   newOkBtn.disabled = false;
   newOkBtn.onclick = async () => {
     const novaVersao = document.getElementById('swapVerSelect').value;
-    if (!novaVersao) { showNotif('Selecione uma versão.', 'warn'); return; }
+    if (!novaVersao) { showNotif('Selecione uma versão.', 'warn'); window.isProcessingAction = false; return; }
 
     overlay.style.display = 'none';
 
@@ -1637,7 +1638,7 @@ async function trocarVersaoTST(machineEncoded, produto, versaoAtual, tomcat) {
        Para: <code style="color:var(--success)">${novaVersao}</code><br><br>
        <span style="font-size:11px;color:#888;">O XML do Tomcat <strong>${tomcat}</strong> será atualizado. O Tomcat precisa ser reiniciado para aplicar a mudança.</span>`
     );
-    if (!confirmed) return;
+    if (!confirmed) { window.isProcessingAction = false; return; }
 
     const consoleContainer = document.getElementById('updateConsoleContainer');
   if (consoleContainer) consoleContainer.style.display = 'flex';
@@ -2187,6 +2188,7 @@ async function batchUpdateVersions(targetEnv) {
 
   if (!updates.length) {
     showNotif('Nenhum produto divergente para atualizar.', 'warn');
+    window.isProcessingAction = false;
     return;
   }
 
@@ -2202,6 +2204,7 @@ async function batchUpdateVersions(targetEnv) {
 
   if (!targetMachines.length) {
     showNotif(`Nenhuma máquina ${targetEnv} selecionada.`, 'warn');
+    window.isProcessingAction = false;
     return;
   }
   
@@ -2224,6 +2227,7 @@ async function batchUpdateVersions(targetEnv) {
 
   if (missingReleaseInTarget) {
     showNotif(missingMsg + ' Operação cancelada.', 'err');
+    window.isProcessingAction = false;
     return;
   }
 
@@ -2231,7 +2235,10 @@ async function batchUpdateVersions(targetEnv) {
     `Atenção: Atualização em Lote`,
     `Confirma a atualização de <strong>${updates.length} produto(s)</strong> nos ambientes <strong>${targetEnv}</strong>?<br><br>Será feito backup automático na pasta <code>/MV/flowtiequalizer/</code> (com a data de hoje).`
   );
-  if (!confirmed) return;
+  if (!confirmed) {
+    window.isProcessingAction = false;
+    return;
+  }
 
   const balRef = getBestBalForMachines(selected);
   const btnTst = document.getElementById('btn-batch-tst');
@@ -2373,6 +2380,7 @@ async function triggerSyncRelease(produto) {
 
   if (!selected.length) {
     showNotif("Selecione as máquinas (pelo menos 1 de PRD e 1 de TST) para sincronizar.", "warn");
+    window.isProcessingAction = false;
     return;
   }
 
@@ -2611,6 +2619,7 @@ async function triggerRollback(produto) {
   const backupPath = window.lastBackupPath;
   if (!targetEnv || !backupPath) {
     showNotif("Nenhum backup recente encontrado. O rollback só funciona logo após uma atualização na mesma sessão.", "err");
+    window.isProcessingAction = false;
     return;
   }
   
@@ -2618,7 +2627,7 @@ async function triggerRollback(produto) {
     `Atenção: Rollback de XML`,
     `Deseja realmente fazer o <strong>ROLLBACK</strong> do XML do produto <strong>${produto}</strong> no ambiente <strong>${targetEnv}</strong>?<br><br>Ele voltará para o arquivo que estava em:<br><code>${backupPath}</code>`
   );
-  if (!confirmed) return;
+  if (!confirmed) { window.isProcessingAction = false; return; }
   
   const consoleContainer = document.getElementById('updateConsoleContainer');
   if (consoleContainer) consoleContainer.style.display = 'flex';
@@ -2633,6 +2642,7 @@ async function triggerRollback(produto) {
   
   if (!window.lastTargetMachines || !window.lastBalRef) {
     showNotif('Dados da sessão de atualização perdidos. Faça uma nova atualização antes de fazer rollback.', 'err');
+    window.isProcessingAction = false;
     return;
   }
   const hostnames = window.lastTargetMachines.map(m => m.hostname);

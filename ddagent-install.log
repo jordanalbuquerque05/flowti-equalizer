@@ -1,0 +1,82 @@
+[34m
+* Datadog Agent 7 install script v1.46.0
+[0m
+/usr/bin/systemctl
+Failed to get D-Bus connection: No such file or directory
+[34m
+* Installing YUM sources for Datadog
+[0m
+Loaded plugins: ovl, ulninfo
+Cleaning repos: centos-extras datadog docker-ce-stable ol7_addons
+              : ol7_developer_EPEL ol7_latest ol7_optional_latest
+3 metadata files removed
+2 sqlite files removed
+0 metadata files removed
+Loaded plugins: ovl, ulninfo
+Error: No matching Packages to list
+  [33mInstalling package(s): datadog-agent
+[0m
+Loaded plugins: ovl, ulninfo
+Package 1:datadog-agent-7.82.1-1.x86_64 already installed and latest version
+Nothing to do
+[34m
+* Keeping old /etc/datadog-agent/datadog.yaml configuration file
+[0m
+Downloading the Datadog installer...
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0 27 22.9M   27 6468k    0     0  4241k      0  0:00:05  0:00:01  0:00:04 4241k 62 22.9M   62 14.3M    0     0  7517k      0  0:00:03  0:00:01  0:00:02 7515k 77 22.9M   77 17.7M    0     0  4949k      0  0:00:04  0:00:03  0:00:01 4950k 90 22.9M   90 20.7M    0     0  5283k      0  0:00:04  0:00:04 --:--:-- 5284k100 22.9M  100 22.9M    0     0  4783k      0  0:00:04  0:00:04 --:--:-- 4784k
+Verifying installer integrity...
+Installer integrity verified.
+Starting the Datadog installer...
+Datadog Installer 7.82.1 - https://www.datadoghq.com
+Running the APM SSI installation script (https://github.com/DataDog/datadog-agent/tree/dd7ddd6349/pkg/fleet/installer/setup/defaultscript/ssi_standalone.go) - 2026-08-11T13:07:24-03:00
+The following packages will be installed:
+  - datadog-apm-inject / 0
+  - datadog-apm-library-java / 1
+  - datadog-apm-library-python / 4
+  - datadog-apm-library-ruby / 2
+  - datadog-apm-library-js / 5
+  - datadog-apm-library-dotnet / 3
+  - datadog-apm-library-php / 1
+Stopping Datadog Agent services...
+Applying configurations...
+Installing datadog-apm-inject...
+package datadog-apm-inject version 0.70.0 is already installed
+Successfully installed datadog-apm-inject
+Installing datadog-apm-library-java...
+package datadog-apm-library-java version 1.65.1 is already installed
+Successfully installed datadog-apm-library-java
+Installing datadog-apm-library-python...
+package datadog-apm-library-python version 4.12.2 is already installed
+Successfully installed datadog-apm-library-python
+Installing datadog-apm-library-ruby...
+package datadog-apm-library-ruby version 2.40.0 is already installed
+Successfully installed datadog-apm-library-ruby
+Installing datadog-apm-library-js...
+package datadog-apm-library-js version 5.121.0 is already installed
+Successfully installed datadog-apm-library-js
+Installing datadog-apm-library-dotnet...
+package datadog-apm-library-dotnet version 3.50.0 is already installed
+Successfully installed datadog-apm-library-dotnet
+Installing datadog-apm-library-php...
+package datadog-apm-library-php version 1.23.3 is already installed
+Successfully installed datadog-apm-library-php
+Successfully ran the APM SSI install script in 1s!
+/usr/bin/systemctl
+[34m* Starting the Datadog Agent...
+[0m
+Failed to get D-Bus connection: No such file or directory
+[31mError starting Datadog Agent
+It looks like you hit an issue when trying to install the Datadog Agent.
+
+    
+
+Troubleshooting and basic usage information for the Datadog Agent are available at:
+
+    https://docs.datadoghq.com/agent/basic_agent_usage/
+[0m
+
+If you are still having problems, please send an email to support@datadoghq.com
+with the contents of ddagent-install.log and any information you think would be
+useful and we will do our very best to help you solve your problem.

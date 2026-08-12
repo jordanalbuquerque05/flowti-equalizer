@@ -71,11 +71,17 @@ function getIPMatchScore(ip1, ip2) {
   return score;
 }
 
-function sortBalsBySubnet(bals, targetIp) {
+function sortBalsByPriority(bals, targetMachine) {
   if (!bals || bals.length === 0) return [];
   return [...bals].sort((a, b) => {
-    const scoreA = getIPMatchScore(a.ip, targetIp);
-    const scoreB = getIPMatchScore(b.ip, targetIp);
+    // Priority 1: Match ambiente
+    const envMatchA = (a.ambiente === targetMachine.ambiente) ? 1 : 0;
+    const envMatchB = (b.ambiente === targetMachine.ambiente) ? 1 : 0;
+    if (envMatchA !== envMatchB) return envMatchB - envMatchA; // Descending
+    
+    // Priority 2: Match Subnet score
+    const scoreA = getIPMatchScore(a.ip, targetMachine.ip);
+    const scoreB = getIPMatchScore(b.ip, targetMachine.ip);
     return scoreB - scoreA; // Descending
   });
 }
@@ -150,8 +156,8 @@ async function executeWithBalFallback({ bals, balHost, balTenancy, targetMachine
     }];
   }
 
-  // Sort BALs por similaridade de subnet com a máquina alvo
-  const sortedBals = sortBalsBySubnet(availableBals, targetMachine.ip);
+  // Sort BALs priorizando ambiente e subnet
+  const sortedBals = sortBalsByPriority(availableBals, targetMachine);
   
   // Monta lista de senhas únicas para tentar (prioriza a da tenancy da máquina)
   const allPasswords = Object.values(SSH_PASSWORDS).filter(Boolean);
@@ -278,10 +284,9 @@ function getSOULsFromInventory(codigoSearch) {
   const search = codigoSearch.trim().toLowerCase();
   const list = inventory
     .filter((m) => {
-      if (isBAL(m.hostname || '')) return false;
       const h = (m.hostname || '').toUpperCase();
-      const isApp = h.includes('SOUL') || h.includes('ERP') || h.includes('HOSP') || h.includes('-REPORT') || h.includes('PEP') || h.includes('INTEGRACAO');
-      if (!isApp) return false;
+      if (isBAL(h)) return false;
+      if (h.startsWith('DB') || h.includes('-DB')) return false;
       const codigo = (m.codigo || '').toLowerCase().replace(/^0+/, '');
       const codigoRaw = (m.codigo || '').toLowerCase();
       return (
@@ -1222,7 +1227,7 @@ done
 
     sendEvent({ type: 'progress', hostname: machine.hostname, ip: machine.ip, status: 'connecting' });
     try {
-      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: dynamicCMD, isStream: false, onData: null, timeout: 12000, res: null });
+      const raw = await executeWithBalFallback({ bals, balHost, balTenancy, targetMachine: machine, cmd: dynamicCMD, isStream: false, onData: null, timeout: 25000, res: null });
       const tomcats = parseVersionOutput(raw);
 
       // Update cache
@@ -1297,7 +1302,7 @@ fi
 `.trim();
   }
 
-  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 15000) {
+  function sshChainExec(balPubIp, balPwd, soulPrivIp, soulPwd, cmd, timeout = 25000) {
     return new Promise((resolve, reject) => {
       const jumpClient = new Client();
       let settled = false;

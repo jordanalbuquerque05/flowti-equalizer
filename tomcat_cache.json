@@ -409,5 +409,81 @@
     "mvcontrolesala": "tomcat8047",
     "report-designer": "tomcat8600",
     "report-executor": "tomcat8700"
+  },
+  "10.99.69.3": {
+    "diagnostico-ws": "tomcat8008",
+    "soul-integrated-services": "tomcat8050",
+    "soul-mv": "tomcat8050",
+    "soul-product-forms": "tomcat8060",
+    "soul-product-workspace": "tomcat8060",
+    "soul-product-reports": "tomcat8061",
+    "report-designer": "tomcat8600",
+    "report-executor": "tomcat8700"
+  },
+  "10.99.69.5": {
+    "diagnostico-ws": "tomcat8208",
+    "soul-integrated-services": "tomcat8250",
+    "soul-mv": "tomcat8250",
+    "soul-product-forms": "tomcat8260",
+    "soul-product-workspace": "tomcat8260",
+    "soul-product-reports": "tomcat8261",
+    "soul-plano-saude-forms": "tomcat8270",
+    "soul-plano-saude-workspace": "tomcat8270",
+    "soul-plano-saude-reports": "tomcat8271",
+    "report-designer": "tomcat8620",
+    "report-executor": "tomcat8720"
+  },
+  "10.32.1.6": {
+    "mv": "tomcat8200",
+    "mv_reports": "tomcat8210",
+    "mvsmensageria": "tomcat8216",
+    "soul-integrated-services": "tomcat8250",
+    "soul-mv": "tomcat8250",
+    "soul-plano-saude-forms": "tomcat8270",
+    "soul-plano-saude-workspace": "tomcat8270",
+    "soul-plano-saude-reports": "tomcat8271",
+    "mvautenticador-cas": "tomcat8502",
+    "report-designer": "tomcat8620",
+    "report-executor": "tomcat8720"
+  },
+  "10.50.1.2": {
+    "diagnostico-ws": "tomcat8000",
+    "integracao": "tomcat8000",
+    "mv": "tomcat8001",
+    "mv_reports": "tomcat8010",
+    "mvpep": "tomcat8020",
+    "mveditor": "tomcat8030",
+    "pagu_reports": "tomcat8040",
+    "pagu": "tomcat8040",
+    "mvautenticador-cas": "tomcat8500",
+    "report-designer": "tomcat8600",
+    "report-executor": "tomcat8700"
+  },
+  "10.50.1.4": {
+    "diagnostico-ws": "tomcat8200",
+    "integracao": "tomcat8200",
+    "mv": "tomcat8200",
+    "mv_reports": "tomcat8210",
+    "mvpep": "tomcat8220",
+    "mveditor": "tomcat8230",
+    "pagu_reports": "tomcat8240",
+    "pagu": "tomcat8240",
+    "mvautenticador-cas": "tomcat8502",
+    "report-designer": "tomcat8620",
+    "report-executor": "tomcat8720"
+  },
+  "10.32.1.7": {
+    "integracao": "tomcat8000",
+    "mv": "tomcat8000",
+    "plano": "tomcat8000",
+    "mv_reports": "tomcat8010",
+    "plano_reports": "tomcat8010",
+    "soul-integrated-services": "tomcat8050",
+    "soul-mv": "tomcat8050",
+    "soul-plano-saude-forms": "tomcat8070",
+    "soul-plano-saude-workspace": "tomcat8070",
+    "soul-plano-saude-reports": "tomcat8071",
+    "report-designer": "tomcat8600",
+    "report-executor": "tomcat8700"
   }
 }
