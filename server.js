@@ -793,7 +793,7 @@ app.post('/api/sync-release', async (req, res) => {
   const connectMachine = async (machine) => {
     let availableBals = (bals || []).filter(b => b.public_ip && b.public_ip !== '---');
     if (availableBals.length === 0) availableBals = [{ public_ip: balHost, ip: '0.0.0.0', tenancy: balTenancy }];
-    const sortedBals = sortBalsBySubnet(availableBals, machine.ip);
+    const sortedBals = sortBalsByPriority(availableBals, machine);
 
     let lastErr;
     const allPasswords = Object.values(SSH_PASSWORDS).filter(Boolean);
