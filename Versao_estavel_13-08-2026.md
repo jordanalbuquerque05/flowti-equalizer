@@ -110,3 +110,8 @@ SSH_PASS_CLOUDMVORACLE=senha_padrao_2
 > **NOTA PARA A INTELIGÊNCIA ARTIFICIAL** 
 > 
 > Se estiver reconstruindo esta aplicação, certifique-se de configurar o **SSH Client do Node (`ssh2`)** para sempre incluir as chaves de timeout para evitar travamentos (`readyTimeout: 15000`) em ambos os túneis e instanciar um `Stream Reader` no frontend para suportar a arquitetura **NDJSON**, que é indispensável para evitar telas congeladas enquanto se executa auditorias lentas nos data centers. Mantenha fielmente o esquema de leitura via túnel (JumpClient -> ForwardOut -> SoulClient).
+
+### Patch 13/08/2026 (Wildcard Tomcats)
+- **server.js**: Lógica de mapeamento de caminhos modificada de /MV/servers// para /MV/servers/soulmv_*/. Isso corrige o problema onde máquinas TST que utilizavam o nome soulmv_tst ao invés de soulmv_trn retornavam 0 produtos.
+- **index.html**: Corrigido o bug visual no painel onde o texto fixo de sucesso (✅ Ambiente já se encontra equalizado!) aparecia mesmo quando nenhum produto fosse encontrado ou equalizado (0 produtos).
+- **Filtro de Inventário**: Adicionada regra no server.js para filtrar e ignorar máquinas que contenham nomes inúteis ou lixo (ex: WIN, VIVACE, STG, globalh, green) logo no carregamento do arquivo JSON, reduzindo a lista geral e melhorando a performance.\n

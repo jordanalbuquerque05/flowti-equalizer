@@ -46,6 +46,18 @@ try {
   for (const m of inventory) {
     const key = m.hostname ? m.hostname.toUpperCase() + (m.ip ? '_' + m.ip : '') : null;
     if (!key) continue;
+    
+    const lowerName = m.hostname.toLowerCase();
+    if (
+      lowerName.includes('win') ||
+      lowerName.includes('vivace') ||
+      lowerName.includes('stg') ||
+      lowerName.includes('globalh') ||
+      lowerName.includes('green')
+    ) {
+      continue;
+    }
+
     const existing = map.get(key);
     if (!existing || (!existing.tenancy && m.tenancy)) {
       map.set(key, m);
@@ -502,7 +514,7 @@ app.post('/api/restart-tomcat', async (req, res) => {
                   findTomcatCmd = `tomcat_name="${cachedTomcat}"\ntomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')\necho "TOMCAT_ID=$tomcat_port"`;
                 } else {
                   findTomcatCmd = `
-xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+xml=$(ls /MV/servers/soulmv_*/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
 if [ -z "$xml" ]; then exit 1; fi
 tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
 tomcat_port=$(echo "$tomcat_name" | grep -oP '\\d+')
@@ -646,14 +658,15 @@ app.post('/api/rollback-tomcat', async (req, res) => {
     if (cachedTomcat) {
       findTomcatLogic = `
 tomcat_name="${cachedTomcat}"
-xml="/MV/servers/${targetDir}/$tomcat_name/conf/Catalina/localhost/${produto}.xml"
+xml=$(ls /MV/servers/soulmv_*/$tomcat_name/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+if [ -z "$xml" ]; then echo "❌ Erro: Tomcat no cache mas XML não encontrado"; exit 1; fi
 echo ">> [CACHE] Produto ${produto} mapeado no Tomcat: $tomcat_name"
 `;
     } else {
       findTomcatLogic = `
-xml=$(ls /MV/servers/${targetDir}/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
+xml=$(ls /MV/servers/soulmv_*/*/conf/Catalina/localhost/${produto}.xml 2>/dev/null | head -1)
 if [ -z "$xml" ]; then
-  echo "❌ Produto ${produto} não encontrado no ambiente ${targetDir} da máquina ${machine.hostname}"
+  echo "❌ Produto ${produto} não encontrado na máquina ${machine.hostname}"
   exit 1
 fi
 tomcat_name=$(echo "$xml" | awk -F'/' '{print $5}')
@@ -1206,7 +1219,7 @@ app.post('/api/check-versions', async (req, res) => {
   async function processMachine(machine) {
     const targetDir = getTargetDir(machine.ambiente);
     const dynamicCMD = `
-for serverdir in /MV/servers/${targetDir}/; do
+for serverdir in /MV/servers/soulmv_*/; do
   [ -d "$serverdir" ] || continue
   for dir in "$serverdir"/*/; do
     [ -d "$dir" ] || continue
@@ -1665,7 +1678,7 @@ app.post('/api/client-db-version', async (req, res) => {
 
     // Build script to find config file using the version from Tomcat XML (same approach as check-versions)
     const extractCmd = `
-for serverdir in /MV/servers/${targetDir}/; do
+for serverdir in /MV/servers/soulmv_*/; do
   [ -d "$serverdir" ] || continue
   for dir in "$serverdir"/*/; do
     [ -d "$dir" ] || continue
@@ -1675,7 +1688,7 @@ for serverdir in /MV/servers/${targetDir}/; do
       [ -f "$xml" ] || continue
       CURRENT_VER=$(grep -oP 'docBase="[^"]*products/soul-product-forms/\\K[^/"]+' "$xml" 2>/dev/null | head -1)
       if [ -n "$CURRENT_VER" ]; then
-        for BASE_DIR in /MV/apps/${targetDir} /MV/apps/soulmv_sml /MV/apps/soulmv_tst; do
+        for BASE_DIR in /MV/apps/soulmv_*; do
           for CONF_FILE in "application.config.properties" "db.properties"; do
             FULL_PATH="$BASE_DIR/products/soul-product-forms/$CURRENT_VER/conf/$CONF_FILE"
             if [ -f "$FULL_PATH" ]; then

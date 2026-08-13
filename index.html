@@ -1221,11 +1221,15 @@ async function runFullCheck() {
                  </div>
                `;
            }
+           const eqClass = equalizedProducts.length === 0 ? 'ver-mismatch-msg' : 'ver-equalized-msg';
+           const eqTitle = equalizedProducts.length === 0 ? '⚠ <strong>Atenção: Nenhum produto pôde ser equalizado!</strong><br>' : '✅ <strong>Ambiente (online) já se encontra equalizado!</strong><br>';
+           const eqDesc = equalizedProducts.length === 0 ? '0 produtos batendo. Os produtos da referência não foram encontrados (ou não estão instalados) nos demais tomcats.' : `Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).`;
+           
            normalContent = `
-             <div class="ver-equalized-msg" style="margin-bottom:16px;">
-               ✅ <strong>Ambiente (online) já se encontra equalizado!</strong><br>
+             <div class="${eqClass}" style="margin-bottom:16px;">
+               ${eqTitle}
                <span style="font-size:12px; font-weight:400; color:var(--text); display:block; margin-top:6px;">
-                 Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).
+                 ${eqDesc}
                </span>
                ${missingHtml}
              </div>
@@ -1279,16 +1283,20 @@ async function runFullCheck() {
              </div>
            `;
        }
+       const eqClass2 = equalizedProducts.length === 0 ? 'ver-mismatch-msg' : 'ver-equalized-msg';
+       const eqTitle2 = equalizedProducts.length === 0 ? '⚠ <strong>Atenção: Nenhum produto pôde ser equalizado!</strong><br>' : '✅ <strong>Ambiente já se encontra equalizado!</strong><br>';
+       const eqDesc2 = equalizedProducts.length === 0 ? '0 produtos batendo. Os produtos da referência não foram encontrados (ou não estão instalados) nos demais tomcats.' : `Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).`;
+       
        tableWrap.innerHTML = `
-         <div class="ver-equalized-msg" style="margin-bottom:16px;">
-           ✅ <strong>Ambiente já se encontra equalizado!</strong><br>
+         <div class="${eqClass2}" style="margin-bottom:16px;">
+           ${eqTitle2}
            <span style="font-size:12px; font-weight:400; color:var(--text); display:block; margin-top:6px;">
-             Todos os produtos de referência instalados estão com as versões batendo (${equalizedProducts.length} produtos).
+             ${eqDesc2}
            </span>
            ${missingHtml}
          </div>
        `;
-       logProgress(`✅ Ambientes equalizados!`);
+       logProgress(equalizedProducts.length === 0 ? `⚠ Nenhum produto equalizado.` : `✅ Ambientes equalizados!`);
     } else {
        tableWrap.innerHTML = `<div class="ver-mismatch-msg" style="margin-bottom:16px;">Nenhum produto encontrado no servidor de referência.</div>`;
     }
