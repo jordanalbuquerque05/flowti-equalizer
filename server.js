@@ -74,10 +74,10 @@ function getIPMatchScore(ip1, ip2) {
 function sortBalsByPriority(bals, targetMachine) {
   if (!bals || bals.length === 0) return [];
   return [...bals].sort((a, b) => {
-    // Priority 1: Match ambiente
-    const envMatchA = (a.ambiente === targetMachine.ambiente) ? 1 : 0;
-    const envMatchB = (b.ambiente === targetMachine.ambiente) ? 1 : 0;
-    if (envMatchA !== envMatchB) return envMatchB - envMatchA; // Descending
+    // Priority 1: PRD BALs always come first
+    const isPrdA = (a.ambiente || '').toUpperCase().includes('PRD') ? 1 : 0;
+    const isPrdB = (b.ambiente || '').toUpperCase().includes('PRD') ? 1 : 0;
+    if (isPrdA !== isPrdB) return isPrdB - isPrdA; // Descending
     
     // Priority 2: Match Subnet score
     const scoreA = getIPMatchScore(a.ip, targetMachine.ip);
@@ -1162,6 +1162,12 @@ app.get('/api/soul-machines', async (req, res) => {
       }));
       bals = dedupMachines(bals.concat(dbBals));
     }
+
+    // Filter out WIN and STG machines
+    soulMachines = soulMachines.filter(m => {
+      const upperName = (m.hostname || '').toUpperCase();
+      return !upperName.includes('WIN') && !upperName.includes('STG');
+    });
 
     res.json({ success: true, soulMachines, bals });
   } catch (e) {
