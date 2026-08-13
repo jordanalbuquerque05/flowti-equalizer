@@ -82,6 +82,31 @@ O painel foi construído no formato "Dashboard" lateral com painéis centrais di
 
 ---
 
+## 5. Variáveis de Ambiente Necessárias (.env)
+
+Para que a aplicação rode corretamente, o ambiente precisará conter obrigatoriamente um arquivo `.env` na raiz com o seguinte formato:
+
+```env
+# Configurações de Banco de Dados OCI
+DB_HOST=10.x.x.x
+DB_PORT=33060
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha
+DB_NAME=flowti
+
+# Senhas Dinâmicas SSH
+SSH_USER=opc
+SSH_PASS_MVCLIENTESAAS=senha_padrao_1
+SSH_PASS_CLOUDMVORACLE=senha_padrao_2
+```
+
+## 6. Prevenção de Erros Conhecidos (Troubleshooting)
+
+- **Erro "prods is not iterable" ou retornos nulos**: Ocorre se houver vazamento de output no shell SSH antes do formato `tomcat|produto|versao`. Nunca adicione comandos de debug no shell SSH que quebrem o split do parser.
+- **Porta 3333 em uso (Ghost Process)**: No Windows, ao fazer reinicializações drásticas da aplicação, o Node.js pode não soltar a porta TCP. Se a API estiver falhando silenciosamente, verifique se há um processo PID travado com `netstat -ano | findstr 3333` e mate-o.
+
+---
+
 > **NOTA PARA A INTELIGÊNCIA ARTIFICIAL** 
 > 
 > Se estiver reconstruindo esta aplicação, certifique-se de configurar o **SSH Client do Node (`ssh2`)** para sempre incluir as chaves de timeout para evitar travamentos (`readyTimeout: 15000`) em ambos os túneis e instanciar um `Stream Reader` no frontend para suportar a arquitetura **NDJSON**, que é indispensável para evitar telas congeladas enquanto se executa auditorias lentas nos data centers. Mantenha fielmente o esquema de leitura via túnel (JumpClient -> ForwardOut -> SoulClient).
