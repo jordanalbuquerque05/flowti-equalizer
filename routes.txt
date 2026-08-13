@@ -1,9 +1,0 @@
-﻿
-server.js:215:app.get('/api/clients', (req, res) => {
-server.js:806:app.get('/api/inventory', (req, res) => {
-server.js:812:app.get('/api/machines', async (req, res) => {
-server.js:867:app.get('/api/search', (req, res) => {
-server.js:880:app.get('/api/db-status', async (req, res) => {
-server.js:892:app.get('/api/soul-machines', async (req, res) => {
-
-

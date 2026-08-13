@@ -1,4 +1,0 @@
-﻿
-index.html:706:    const res = await fetch('/api/db-status');
-
-
