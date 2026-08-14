@@ -3,21 +3,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* Premium Dark Mode Colors (Zinc based) */
-  --bg-base:       #09090b;
-  --bg-surface:    #18181b;
-  --bg-card:       #27272a;
-  --bg-card-hover: #3f3f46;
-  --bg-glass:      rgba(24, 24, 27, 0.7);
+  /* Premium Dark Mode Colors (Blue based) */
+  --bg-base:       #020617;
+  --bg-surface:    #0f172a;
+  --bg-card:       #1e293b;
+  --bg-card-hover: #334155;
+  --bg-glass:      rgba(15, 23, 42, 0.7);
   
   /* Borders and Dividers */
   --border:        rgba(255, 255, 255, 0.08);
   --border-bright: rgba(255, 255, 255, 0.15);
 
   /* Vibrant Accents */
-  --accent:        #3b82f6; /* Blue */
-  --accent-2:      #8b5cf6; /* Violet */
-  --accent-glow:   rgba(139, 92, 246, 0.35);
+  --accent:        #2563eb; /* Blue */
+  --accent-2:      #3b82f6; /* Light Blue */
+  --accent-glow:   rgba(59, 130, 246, 0.35);
   
   /* Status Colors */
   --success:       #10b981;
@@ -56,7 +56,7 @@ html, body {
 /* ─── Layout ───────────────────────────────────────────────────────────────── */
 .app {
   display: grid;
-  grid-template-rows: 56px 1fr;
+  grid-template-rows: 72px 1fr;
   grid-template-columns: 300px 1fr;
   grid-template-areas:
     "header header"
@@ -99,13 +99,19 @@ header {
 }
 
 .logo-text {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), #fff, var(--accent-2), var(--accent));
+  background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.5px;
+  animation: logo-shine 4s linear infinite;
+}
+
+@keyframes logo-shine {
+  to { background-position: 200% center; }
 }
 
 .logo-sub {
@@ -259,7 +265,7 @@ header {
 }
 
 .client-item.active {
-  background: linear-gradient(135deg, rgba(99, 120, 255, 0.15), rgba(167, 139, 250, 0.08));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(59, 130, 246, 0.08));
   border-color: var(--border-bright);
   box-shadow: var(--shadow-glow);
 }
@@ -585,8 +591,8 @@ header {
   letter-spacing: 0.3px;
 }
 
-.tenancy-tag.MVCLIENTESAAS { background: rgba(99, 120, 255, 0.15); color: var(--accent); border: 1px solid rgba(99, 120, 255, 0.3); }
-.tenancy-tag.CLOUDMVORACLE { background: rgba(167, 139, 250, 0.15); color: var(--accent-2); border: 1px solid rgba(167, 139, 250, 0.3); }
+.tenancy-tag.MVCLIENTESAAS { background: rgba(37, 99, 235, 0.15); color: var(--accent); border: 1px solid rgba(37, 99, 235, 0.3); }
+.tenancy-tag.CLOUDMVORACLE { background: rgba(59, 130, 246, 0.15); color: var(--accent-2); border: 1px solid rgba(59, 130, 246, 0.3); }
 .tenancy-tag.UNKNOWN, .tenancy-tag.empty { background: var(--bg-base); color: var(--text-dim); border: 1px solid var(--border); }
 
 .card-actions {
@@ -638,7 +644,7 @@ header {
 
 /* ─── CONNECTING STATE – a animação épica ─── */
 .btn-connect.connecting {
-  background: linear-gradient(135deg, #7c3aed, #6378ff, #a78bfa);
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #60a5fa);
   background-size: 200% 200%;
   animation: btn-gradient-shift 1.5s ease infinite, btn-glow-pulse 1s ease-in-out infinite alternate;
   cursor: progress;
@@ -652,8 +658,8 @@ header {
 }
 
 @keyframes btn-glow-pulse {
-  from { box-shadow: 0 0 8px rgba(99,120,255,0.5), 0 0 20px rgba(99,120,255,0.3); }
-  to   { box-shadow: 0 0 20px rgba(167,139,250,0.9), 0 0 40px rgba(99,120,255,0.6), 0 0 60px rgba(99,120,255,0.2); }
+  from { box-shadow: 0 0 8px rgba(37, 99, 235, 0.5), 0 0 20px rgba(37, 99, 235, 0.3); }
+  to   { box-shadow: 0 0 20px rgba(59, 130, 246, 0.9), 0 0 40px rgba(37, 99, 235, 0.6), 0 0 60px rgba(37, 99, 235, 0.2); }
 }
 
 /* Card shimmer overlay while connecting */
@@ -667,8 +673,8 @@ header {
     box-shadow: 0 0 0 0 transparent;
   }
   to {
-    border-color: rgba(167,139,250,0.9);
-    box-shadow: 0 0 0 3px rgba(99,120,255,0.2), 0 0 30px rgba(99,120,255,0.2);
+    border-color: rgba(59, 130, 246, 0.9);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 0 30px rgba(37, 99, 235, 0.2);
   }
 }
 
@@ -680,7 +686,7 @@ header {
   border-radius: inherit;
   border: 2px solid transparent;
   background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
-              linear-gradient(135deg, #6378ff, #a78bfa, #6378ff) border-box;
+              linear-gradient(135deg, #2563eb, #60a5fa, #2563eb) border-box;
   background-size: 200% 200%;
   animation: border-rotate 1.5s linear infinite;
   pointer-events: none;
@@ -755,7 +761,7 @@ header {
 }
 
 .console-drawer.open { height: 340px; }
-.console-drawer.fullscreen { height: calc(100vh - 56px); }
+.console-drawer.fullscreen { height: calc(100vh - 72px); }
 
 .console-header {
   display: flex;
