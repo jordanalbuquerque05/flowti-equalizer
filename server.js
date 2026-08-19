@@ -759,7 +759,7 @@ app.post('/api/check-release-exists', async (req, res) => {
     return { host: balHost, pass: balPassword };
   };
 
-  const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+  const tstPath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${release}`;
   const cmd = `if [ -d "${tstPath}/forms" ]; then echo "DIR_EXISTS"; else echo "DIR_NOT_FOUND"; fi`;
 
   try {
@@ -950,8 +950,8 @@ app.post('/api/sync-release', async (req, res) => {
       res.write(`   ✅ Cópia de arquivos ignorada pelo usuário (arquivos já existem no disco).\n\n`);
     } else {
       console.log(`[SYNC] 5/5 - Sincronizando arquivos (tar pipe). Acompanhando logs de transferência...`);
-      const prdPath = `/MV/apps/soulmv_prd/products/${produto}/${release}`;
-      const tstPath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+      const prdPath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${release}`;
+      const tstPath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${release}`;
 
       await execCmd(tstSoulClient, `sudo su -c "mkdir -p ${tstPath}"`, 'TST-MKDIR');
 
@@ -1009,8 +1009,8 @@ app.post('/api/sync-release', async (req, res) => {
     // NOVO PASSO: Copiar conf da release anterior para a nova
     if (tstInstalledVer && tstInstalledVer !== release) {
       res.write(`>> [6/7] Copiando pasta 'conf' da versão atual (${tstInstalledVer}) para a nova (${release}) no TST...\n`);
-      const oldConfPath = `/MV/apps/soulmv_trn/products/${produto}/${tstInstalledVer}/conf`;
-      const newReleasePath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+      const oldConfPath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${tstInstalledVer}/conf`;
+      const newReleasePath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${release}`;
       const cpCmd = `sudo su -c "if [ -d \\"${oldConfPath}\\" ]; then cp -R \\"${oldConfPath}\\" \\"${newReleasePath}/\\"; fi"`;
       await execCmd(tstSoulClient, cpCmd, 'TST-CP-CONF');
       res.write(`✅ Pasta 'conf' copiada!\n\n`);
@@ -1019,7 +1019,7 @@ app.post('/api/sync-release', async (req, res) => {
     }
 
     res.write(`>> [7/7] Ajustando permissões (chown mv.mv) no TST...\n`);
-    const targetReleasePath = `/MV/apps/soulmv_trn/products/${produto}/${release}`;
+    const targetReleasePath = `$(find /MV/apps/soulmv_*/products -maxdepth 0 2>/dev/null | head -n 1)/${produto}/${release}`;
     await execCmd(tstSoulClient, `sudo su -c "chown -R mv.mv ${targetReleasePath}"`, 'TST-CHOWN');
     res.write(`✅ Permissões ajustadas!\n`);
 
@@ -1291,15 +1291,9 @@ app.post('/api/check-releases', async (req, res) => {
   };
 
   function buildReleasesCmd(ambiente) {
-    // TST machines → soulmv_trn; PRD machines → soulmv_prd
-    const isPrd = /prd/i.test(ambiente);
-    const appBase = isPrd
-      ? '/MV/apps/soulmv_prd/products'
-      : '/MV/apps/soulmv_trn/products';
-
     return `
-APP_BASE="${appBase}"
-if [ -d "$APP_BASE" ]; then
+for APP_BASE in /MV/apps/soulmv_*/products; do
+  [ -d "$APP_BASE" ] || continue
   for product_dir in "$APP_BASE"/*/; do
     [ -d "$product_dir" ] || continue
     prod=$(basename "$product_dir")
@@ -1309,9 +1303,7 @@ if [ -d "$APP_BASE" ]; then
       echo "$prod|$ver"
     done
   done
-else
-  echo "PATH_NOT_FOUND|$APP_BASE"
-fi
+done
 `.trim();
   }
 
@@ -1488,13 +1480,9 @@ echo "----------------------------------------"
 echo "Processando produto: ${upd.produto} -> Alvo: ${upd.novaVersao}"
 for xml in /MV/servers/*/*/conf/Catalina/localhost/${upd.produto}.xml; do
   if [ -f "$xml" ]; then
-    # Derivar o ambiente pelo caminho do xml (soulmv_prd ou soulmv_trn)
+    # Derivar o diretório base de apps diretamente pelo caminho do xml
     server_dir=$(echo "$xml" | awk -F'/' '{print $4}')
-    if echo "$server_dir" | grep -qi "prd"; then
-      APP_BASE="/MV/apps/soulmv_prd/products"
-    else
-      APP_BASE="/MV/apps/soulmv_trn/products"
-    fi
+    APP_BASE="/MV/apps/$server_dir/products"
 
     # Verificar se a pasta da release realmente existe no caminho correto
     if [ ! -d "$APP_BASE/${upd.produto}/${upd.novaVersao}" ]; then
