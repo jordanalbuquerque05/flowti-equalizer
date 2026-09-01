@@ -913,8 +913,8 @@ function renderSoulPanel(panel, data) {
   const chipHTML = soulMachines.map((m, i) => {
     const envLow = (m.ambiente || 'tst').toLowerCase();
     return `
-      <div class="soul-machine-chip selected" id="soul-chip-${i}" onclick="toggleSoulChip(event, ${i})">
-        <input type="checkbox" class="soul-chip-cb" id="soul-cb-${i}" checked style="pointer-events: none;">
+      <div class="soul-machine-chip" id="soul-chip-${i}" onclick="toggleSoulChip(event, ${i})">
+        <input type="checkbox" class="soul-chip-cb" id="soul-cb-${i}" style="pointer-events: none;">
         <div class="soul-chip-info">
           <div class="soul-chip-name" title="${m.hostname}">${m.hostname}</div>
           <div class="soul-chip-env ${envLow.startsWith('prd') ? 'prd' : 'tst'}">${m.ambiente}${m.ip ? ' - ' + m.ip : ''}</div>
@@ -926,10 +926,14 @@ function renderSoulPanel(panel, data) {
   panel.innerHTML = `
     <div class="soul-panel">
       <div class="soul-panel-header">
-        <div class="soul-panel-title">
+        <div class="soul-panel-title" style="display: flex; align-items: center; flex-wrap: wrap;">
           <span class="soul-panel-badge">${soulMachines.length} servidores</span>
           <a href="#" style="font-size:11px; margin-left:12px; font-weight:500; text-decoration:underline; color:var(--accent);" onclick="event.stopPropagation(); setAllSoulChips(false); return false;">Desmarcar Todos</a>
           <a href="#" style="font-size:11px; margin-left:8px; font-weight:500; text-decoration:underline; color:var(--accent);" onclick="event.stopPropagation(); setAllSoulChips(true); return false;">Marcar Todos</a>
+          <div class="machine-search" style="position: relative; margin-left: 12px;">
+            <input type="text" id="machineSearchInput" placeholder="Pesquisar servidor (ex: ERP)..." oninput="filterSoulMachines(this.value)" style="padding: 6px 12px 6px 28px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text); font-size: 12px; width: 220px;" autocomplete="off" spellcheck="false">
+            <span style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted);">🔍</span>
+          </div>
         </div>
       </div>
       <div class="soul-panel-body" id="soulPanelBody">
@@ -1008,6 +1012,20 @@ function toggleSoulPanelBody() {
   body.style.display = hidden ? '' : 'none';
   if (toggle) toggle.classList.toggle('open', hidden);
 }
+
+window.filterSoulMachines = function(query) {
+  const q = query.toLowerCase().trim();
+  const chips = document.querySelectorAll('.soul-machine-chip');
+  chips.forEach(chip => {
+    const name = (chip.querySelector('.soul-chip-name').textContent || '').toLowerCase();
+    const env = (chip.querySelector('.soul-chip-env').textContent || '').toLowerCase();
+    if (name.includes(q) || env.includes(q)) {
+      chip.style.display = '';
+    } else {
+      chip.style.display = 'none';
+    }
+  });
+};
 
 function disableAllActionBtns() {
   ['btnFullCheck', 'btnCheckVersions', 'btnCheckReleases', 'btnCheckDb'].forEach(id => {
