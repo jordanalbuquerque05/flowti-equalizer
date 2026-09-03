@@ -99,7 +99,7 @@ header {
 }
 
 .logo-text {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   background: linear-gradient(90deg, var(--accent), var(--accent-2), #fff, var(--accent-2), var(--accent));
   background-size: 200% auto;
@@ -216,7 +216,7 @@ header {
 }
 
 .sidebar-section-title {
-  padding: 12px 16px 6px;
+  padding: 12px 22px 12px 16px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -225,16 +225,19 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
 }
 
 .sidebar-count-badge {
   background: var(--accent-glow);
   color: var(--accent);
   border-radius: 99px;
-  padding: 2px 8px;
-  font-size: 11px;
+  padding: 3px 10px;
+  font-size: 12px;
   font-weight: 600;
   border: 1px solid var(--border-bright);
+  flex-shrink: 0;
 }
 
 .client-list {
@@ -1258,10 +1261,10 @@ header {
 
 /* ── Logo Flowti ─────────────────────────────────────────────────────────── */
 .logo-flowti {
-  height: 28px;
+  height: 36px;
   width: auto;
-  max-width: 120px;
-  max-height: 28px;
+  max-width: 140px;
+  max-height: 36px;
   display: block;
   flex-shrink: 0;
   filter: drop-shadow(0 0 2px rgba(255,255,255,0.25));
