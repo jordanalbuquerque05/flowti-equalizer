@@ -1,4 +1,6 @@
 const express = require('express');
+const session = require('express-session');
+const LdapAuth = require('ldapauth-fork');
 const http = require('http');
 const WebSocket = require('ws');
 const { Client } = require('ssh2');
@@ -9,10 +11,10 @@ const oracledb = require('oracledb');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ noServer: true });
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-const PORT = 3333;
+const PORT = process.env.PORT || 3334;
 
 require('dotenv').config();
 
@@ -401,7 +403,97 @@ function getTargetDir(ambiente) {
 
 // ─── REST API ─────────────────────────────────────────────────────────────────
 app.use(express.json());
-app.use(express.static(__dirname));
+
+// ─── Autenticação e Sessão ───────────────────────────────────────────────────
+const sessionParser = session({
+  secret: 'flowti-equalizer-secure-secret-2026',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 8 * 60 * 60 * 1000 } // 8 horas
+});
+app.use(sessionParser);
+
+// Configuração de Upgrade para WebSockets (Autenticado)
+server.on('upgrade', (request, socket, head) => {
+  sessionParser(request, {}, () => {
+    if (!request.session.user) {
+      socket.write('HTTP/1.1 401 Unauthorized\\r\\n\\r\\n');
+      socket.destroy();
+      return;
+    }
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  });
+});
+
+// Middleware de Proteção de Rotas
+app.use((req, res, next) => {
+  const publicPaths = ['/login.html', '/styles.css', '/api/login', '/assets'];
+  
+  if (req.path === '/' && !req.session.user) {
+    return res.redirect('/login.html');
+  }
+  
+  if (publicPaths.some(p => req.path.startsWith(p))) {
+    return next();
+  }
+
+  if (req.path === '/index.html' && !req.session.user) {
+    return res.redirect('/login.html');
+  }
+
+  if (req.path.startsWith('/api/') && !req.session.user) {
+    return res.status(401).json({ error: 'Unauthorized', redirect: '/login.html' });
+  }
+
+  next();
+});
+
+// Endpoint de Login via LDAP
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ message: 'Usuário e senha são obrigatórios' });
+  }
+
+  const cleanUsername = username.split('@')[0];
+  const upn = `${cleanUsername}@MVREC.LOCAL`;
+
+  const auth = new LdapAuth({
+    url: 'ldap://192.168.1.236:389',
+    bindDN: upn,
+    bindCredentials: password,
+    searchBase: 'DC=MVREC,DC=LOCAL',
+    searchFilter: `(sAMAccountName=${cleanUsername})`,
+    reconnect: false
+  });
+
+  auth.on('error', (err) => {
+    console.error('LdapAuth Error: ', err);
+  });
+
+  auth.authenticate(upn, password, (err, user) => {
+    auth.close(); // Fecha a conexão após a autenticação
+
+    if (err) {
+      console.error('LDAP Auth Error:', err);
+      return res.status(401).json({ message: 'Usuário ou senha inválidos' });
+    }
+    
+    // Sucesso
+    req.session.user = user || { username: cleanUsername };
+    res.json({ success: true, user: { username: cleanUsername } });
+  });
+});
+
+// Endpoint de Logout
+app.post('/api/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Trava global para prevenir acessos simultâneos a operações críticas
 let isServerProcessing = false;
@@ -910,23 +1002,42 @@ app.post('/api/sync-release', async (req, res) => {
       });
     };
 
-    // PASSO 1: Pegar CATALINA_HOME de PRD
-    res.write(`>> [2/4] Coletando versão do Tomcat em PRD (/etc/init.d/${prdTomcat})...\n`);
+    // PASSO 1: Pegar CATALINA_HOME e JAVA_HOME de PRD
+    res.write(`>> [2/4] Coletando versão do Tomcat e Java em PRD (/etc/init.d/${prdTomcat})...\n`);
     const cmd1 = `sudo su -c "cat /etc/init.d/${prdTomcat} | grep -E '^export CATALINA_HOME=' | awk -F'=' '{print \\$2}' | tr -d '\\"'"`;
     const res1 = await execCmd(prdSoulClient, cmd1, 'PRD-CATALINA');
     let prdCatalinaHome = res1.stdout;
 
+    const cmdJava = `sudo su -c "cat /etc/init.d/${prdTomcat} | grep -E '^export JAVA_HOME=' | awk -F'=' '{print \\$2}' | tr -d '\\"'"`;
+    const resJava = await execCmd(prdSoulClient, cmdJava, 'PRD-JAVA');
+    let prdJavaHome = resJava.stdout;
+
     if (!prdCatalinaHome) {
       throw new Error(`Não foi possível encontrar CATALINA_HOME no PRD (${prdTomcat})`);
     }
-    res.write(`✅ CATALINA_HOME no PRD: ${prdCatalinaHome}\n\n`);
+    res.write(`✅ CATALINA_HOME no PRD: ${prdCatalinaHome}\n`);
+    
+    if (prdJavaHome) {
+      res.write(`✅ JAVA_HOME no PRD: ${prdJavaHome}\n\n`);
+    } else {
+      res.write(`⚠️ JAVA_HOME não encontrado explicitamente no PRD. Sincronização ignorada para o Java.\n\n`);
+    }
 
-    // PASSO 2: Aplicar CATALINA_HOME em TST
+    // PASSO 2: Aplicar CATALINA_HOME e JAVA_HOME em TST
     res.write(`>> [3/5] Atualizando script do Tomcat em TST (/etc/init.d/${tstTomcat})...\n`);
     const sedCmd = `sudo su -c "sed -i 's|^export CATALINA_HOME=.*|export CATALINA_HOME=\\"${prdCatalinaHome}\\"|g' /etc/init.d/${tstTomcat}"`;
     const res2 = await execCmd(tstSoulClient, sedCmd, 'TST-SED-CATALINA');
     if (res2.code !== 0) throw new Error(res2.stderr || 'Erro ao atualizar CATALINA no TST');
-    res.write(`✅ CATALINA_HOME do TST equalizado com sucesso!\n\n`);
+    res.write(`✅ CATALINA_HOME do TST equalizado com sucesso!\n`);
+    
+    if (prdJavaHome) {
+      const sedJavaCmd = `sudo su -c "sed -i 's|^export JAVA_HOME=.*|export JAVA_HOME=\\"${prdJavaHome}\\"|g' /etc/init.d/${tstTomcat}"`;
+      const resJavaSed = await execCmd(tstSoulClient, sedJavaCmd, 'TST-SED-JAVA');
+      if (resJavaSed.code !== 0) throw new Error(resJavaSed.stderr || 'Erro ao atualizar JAVA_HOME no TST');
+      res.write(`✅ JAVA_HOME do TST equalizado com sucesso!\n\n`);
+    } else {
+      res.write(`\n`);
+    }
 
     // PASSO 3: Copiar tomcat-version.txt
     res.write(`>> [4/5] Copiando arquivo tomcat-version.txt do PRD...\n`);
@@ -2040,7 +2151,7 @@ wss.on('connection', (ws) => {
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n⚡ FlowtiEqualizerOps running at http://localhost:${PORT}`);
+  console.log(`\n⚡ Equalizer running at http://localhost:${PORT}`);
   console.log(`📂 Serving files from: ${__dirname}`);
   console.log(`📋 Inventory: ${inventory.length} unique machines loaded\n`);
   // Try DB in background
